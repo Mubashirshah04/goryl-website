@@ -1,0 +1,10 @@
+# Ignore everything by default
+*
+
+# Keep ONLY essential files for Firebase Functions SSR
+!.next/server/
+!.next/BUILD_ID
+!.next/routes-manifest.json
+!.next/required-server-files.json
+!package.json
+!next.config.js

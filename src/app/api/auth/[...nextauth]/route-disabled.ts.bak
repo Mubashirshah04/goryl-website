@@ -1,0 +1,17 @@
+// This file is disabled - NextAuth now runs on Firebase Cloud Function
+// See: functions/nextauth-api.js
+// All /api/auth/* routes are handled by the 'nextauth' Firebase Function
+
+export async function GET() {
+  return Response.json({ 
+    error: 'This endpoint is disabled. Use Firebase Function instead.',
+    redirect: '/api/auth/session'
+  }, { status: 503 });
+}
+
+export async function POST() {
+  return Response.json({ 
+    error: 'This endpoint is disabled. Use Firebase Function instead.',
+    redirect: '/api/auth/signin'
+  }, { status: 503 });
+}

@@ -1,0 +1,186 @@
+{
+  "rules": {
+    // Users data - only authenticated users can read/write their own data
+    "users": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": "auth != null && auth.uid == $userId",
+        ".validate": "newData.hasChildren(['uid', 'email', 'displayName'])"
+      }
+    },
+    
+    // User presence - allow users to read all presence data and write only their own
+    "userPresence": {
+      "$userId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    },
+    
+    // Chat rooms - only participants can access
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null && data.child('participants').hasChild(auth.uid)",
+        ".write": "auth != null && (data.child('participants').hasChild(auth.uid) || newData.child('participants').hasChild(auth.uid))",
+        ".validate": "newData.hasChildren(['participants', 'lastMessage', 'timestamp'])"
+      }
+    },
+    
+    // Messages in chats - only chat participants can access
+    "messages": {
+      "$chatId": {
+        "$messageId": {
+          ".read": "auth != null && root.child('chats').child($chatId).child('participants').hasChild(auth.uid)",
+          ".write": "auth != null && root.child('chats').child($chatId).child('participants').hasChild(auth.uid)",
+          ".validate": "newData.hasChildren(['senderId', 'text', 'timestamp'])"
+        }
+      }
+    },
+    
+    // Live streaming data - public read, authenticated write
+    "liveStreams": {
+      "$streamId": {
+        ".read": "true",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['title', 'streamerId', 'status', 'timestamp'])"
+      }
+    },
+    
+    // Notifications - users can only access their own notifications
+    "notifications": {
+      "$userId": {
+        "$notificationId": {
+          ".read": "auth != null && auth.uid == $userId",
+          ".write": "auth != null && auth.uid == $userId"
+        }
+      }
+    },
+    
+    // Analytics data - only authenticated users can write, public read for basic stats
+    "analytics": {
+      "public": {
+        ".read": "true",
+        ".write": "auth != null"
+      },
+      "private": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    
+    // App settings - public read, admin write
+    "settings": {
+      ".read": "true",
+      ".write": "auth != null"
+    },
+    
+    // Products - public read, only sellers can write their own products
+    "products": {
+      "$productId": {
+        ".read": "true",
+        ".write": "auth != null && (data.child('sellerId').val() == auth.uid || newData.child('sellerId').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['title', 'price', 'sellerId', 'category'])"
+      }
+    },
+    
+    // Orders - only buyer and seller can access
+    "orders": {
+      "$orderId": {
+        ".read": "auth != null && (data.child('buyerId').val() == auth.uid || data.child('sellerId').val() == auth.uid)",
+        ".write": "auth != null && (data.child('buyerId').val() == auth.uid || data.child('sellerId').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['buyerId', 'sellerId', 'products', 'totalAmount', 'status'])"
+      }
+    },
+    
+    // Cart - only owner can access
+    "carts": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    },
+    
+    // Wishlist - only owner can access
+    "wishlists": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    },
+    
+    // Stories - public read, only owner can write
+    "stories": {
+      "$storyId": {
+        ".read": "true",
+        ".write": "auth != null && (data.child('userId').val() == auth.uid || newData.child('userId').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['userId', 'content', 'timestamp'])"
+      }
+    },
+    
+    // Reels - public read, only creator can write
+    "reels": {
+      "$reelId": {
+        ".read": "true",
+        ".write": "auth != null && (data.child('authorId').val() == auth.uid || newData.child('authorId').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['authorId', 'title', 'videoUrl', 'timestamp'])"
+      }
+    },
+    
+    // Categories - public read, authenticated write
+    "categories": {
+      "$categoryId": {
+        ".read": "true",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['name', 'description'])"
+      }
+    },
+    
+    // Follows/Following relationships
+    "follows": {
+      "$followId": {
+        ".read": "auth != null",
+        ".write": "auth != null && (data.child('followerId').val() == auth.uid || newData.child('followerId').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['followerId', 'followingId', 'timestamp'])"
+      }
+    },
+    
+    // Reviews - public read, authenticated write
+    "reviews": {
+      "$reviewId": {
+        ".read": "true",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['userId', 'productId', 'rating', 'comment'])"
+      }
+    },
+    
+    // Comments - public read, authenticated write
+    "comments": {
+      "$commentId": {
+        ".read": "true",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['userId', 'content', 'timestamp'])"
+      }
+    },
+    
+    // Reports - only authenticated users can create/read
+    "reports": {
+      "$reportId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['reporterId', 'type', 'description', 'timestamp'])"
+      }
+    },
+    
+    // Temporary data for real-time features
+    "temp": {
+      "$userId": {
+        ".read": "auth != null && auth.uid == $userId",
+        ".write": "auth != null && auth.uid == $userId"
+      }
+    },
+    
+    // Default rule - deny all other access
+    ".read": "false",
+    ".write": "false"
+  }
+}

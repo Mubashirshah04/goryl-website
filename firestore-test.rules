@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Temporary open rules for testing stories
+    match /stories/{storyId} {
+      allow read, write: if true;
+    }
+    
+    // Allow all other collections for testing
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

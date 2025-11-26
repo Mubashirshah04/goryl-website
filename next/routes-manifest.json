@@ -1,0 +1,688 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/orders/[id]",
+      "regex": "^/orders/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/orders/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/product/[id]",
+      "regex": "^/product/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/product/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/profile/[id]",
+      "regex": "^/profile/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/profile/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/shop/[id]",
+      "regex": "^/shop/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/shop/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/track/[orderId]",
+      "regex": "^/track/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPorderId": "nxtPorderId"
+      },
+      "namedRegex": "^/track/(?<nxtPorderId>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/about",
+      "regex": "^/about(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/about(?:/)?$"
+    },
+    {
+      "page": "/accessibility",
+      "regex": "^/accessibility(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/accessibility(?:/)?$"
+    },
+    {
+      "page": "/admin",
+      "regex": "^/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin(?:/)?$"
+    },
+    {
+      "page": "/admin/analytics",
+      "regex": "^/admin/analytics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/analytics(?:/)?$"
+    },
+    {
+      "page": "/admin/applications",
+      "regex": "^/admin/applications(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/applications(?:/)?$"
+    },
+    {
+      "page": "/admin/audit",
+      "regex": "^/admin/audit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/audit(?:/)?$"
+    },
+    {
+      "page": "/admin/fees",
+      "regex": "^/admin/fees(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/fees(?:/)?$"
+    },
+    {
+      "page": "/admin/login",
+      "regex": "^/admin/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/login(?:/)?$"
+    },
+    {
+      "page": "/admin/login-audit",
+      "regex": "^/admin/login\\-audit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/login\\-audit(?:/)?$"
+    },
+    {
+      "page": "/admin/notifications",
+      "regex": "^/admin/notifications(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/notifications(?:/)?$"
+    },
+    {
+      "page": "/admin/orders",
+      "regex": "^/admin/orders(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/orders(?:/)?$"
+    },
+    {
+      "page": "/admin/payments",
+      "regex": "^/admin/payments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/payments(?:/)?$"
+    },
+    {
+      "page": "/admin/products",
+      "regex": "^/admin/products(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/products(?:/)?$"
+    },
+    {
+      "page": "/admin/reviews",
+      "regex": "^/admin/reviews(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/reviews(?:/)?$"
+    },
+    {
+      "page": "/admin/settings",
+      "regex": "^/admin/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/settings(?:/)?$"
+    },
+    {
+      "page": "/admin/stories",
+      "regex": "^/admin/stories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/stories(?:/)?$"
+    },
+    {
+      "page": "/admin/support-tickets",
+      "regex": "^/admin/support\\-tickets(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/support\\-tickets(?:/)?$"
+    },
+    {
+      "page": "/admin/users",
+      "regex": "^/admin/users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin/users(?:/)?$"
+    },
+    {
+      "page": "/admin-setup",
+      "regex": "^/admin\\-setup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin\\-setup(?:/)?$"
+    },
+    {
+      "page": "/auth-login",
+      "regex": "^/auth\\-login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/auth\\-login(?:/)?$"
+    },
+    {
+      "page": "/become-seller",
+      "regex": "^/become\\-seller(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/become\\-seller(?:/)?$"
+    },
+    {
+      "page": "/blog",
+      "regex": "^/blog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/blog(?:/)?$"
+    },
+    {
+      "page": "/brand/dashboard",
+      "regex": "^/brand/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/brand/dashboard(?:/)?$"
+    },
+    {
+      "page": "/careers",
+      "regex": "^/careers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/careers(?:/)?$"
+    },
+    {
+      "page": "/cart",
+      "regex": "^/cart(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cart(?:/)?$"
+    },
+    {
+      "page": "/categories",
+      "regex": "^/categories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories(?:/)?$"
+    },
+    {
+      "page": "/categories/automotive",
+      "regex": "^/categories/automotive(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/automotive(?:/)?$"
+    },
+    {
+      "page": "/categories/beauty",
+      "regex": "^/categories/beauty(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/beauty(?:/)?$"
+    },
+    {
+      "page": "/categories/beauty-health",
+      "regex": "^/categories/beauty\\-health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/beauty\\-health(?:/)?$"
+    },
+    {
+      "page": "/categories/books",
+      "regex": "^/categories/books(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/books(?:/)?$"
+    },
+    {
+      "page": "/categories/books-media",
+      "regex": "^/categories/books\\-media(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/books\\-media(?:/)?$"
+    },
+    {
+      "page": "/categories/business-industrial",
+      "regex": "^/categories/business\\-industrial(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/business\\-industrial(?:/)?$"
+    },
+    {
+      "page": "/categories/collectibles-art",
+      "regex": "^/categories/collectibles\\-art(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/collectibles\\-art(?:/)?$"
+    },
+    {
+      "page": "/categories/electronics",
+      "regex": "^/categories/electronics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/electronics(?:/)?$"
+    },
+    {
+      "page": "/categories/fashion",
+      "regex": "^/categories/fashion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/fashion(?:/)?$"
+    },
+    {
+      "page": "/categories/food-beverages",
+      "regex": "^/categories/food\\-beverages(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/food\\-beverages(?:/)?$"
+    },
+    {
+      "page": "/categories/home",
+      "regex": "^/categories/home(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/home(?:/)?$"
+    },
+    {
+      "page": "/categories/home-garden",
+      "regex": "^/categories/home\\-garden(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/home\\-garden(?:/)?$"
+    },
+    {
+      "page": "/categories/jewelry-watches",
+      "regex": "^/categories/jewelry\\-watches(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/jewelry\\-watches(?:/)?$"
+    },
+    {
+      "page": "/categories/musical-instruments",
+      "regex": "^/categories/musical\\-instruments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/musical\\-instruments(?:/)?$"
+    },
+    {
+      "page": "/categories/office-supplies",
+      "regex": "^/categories/office\\-supplies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/office\\-supplies(?:/)?$"
+    },
+    {
+      "page": "/categories/pet-supplies",
+      "regex": "^/categories/pet\\-supplies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/pet\\-supplies(?:/)?$"
+    },
+    {
+      "page": "/categories/sports",
+      "regex": "^/categories/sports(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/sports(?:/)?$"
+    },
+    {
+      "page": "/categories/sports-fitness",
+      "regex": "^/categories/sports\\-fitness(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/sports\\-fitness(?:/)?$"
+    },
+    {
+      "page": "/categories/toys",
+      "regex": "^/categories/toys(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/toys(?:/)?$"
+    },
+    {
+      "page": "/categories/toys-games",
+      "regex": "^/categories/toys\\-games(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/toys\\-games(?:/)?$"
+    },
+    {
+      "page": "/categories/travel-luggage",
+      "regex": "^/categories/travel\\-luggage(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories/travel\\-luggage(?:/)?$"
+    },
+    {
+      "page": "/chat",
+      "regex": "^/chat(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/chat(?:/)?$"
+    },
+    {
+      "page": "/checkout",
+      "regex": "^/checkout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/checkout(?:/)?$"
+    },
+    {
+      "page": "/community",
+      "regex": "^/community(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/community(?:/)?$"
+    },
+    {
+      "page": "/contact-us",
+      "regex": "^/contact\\-us(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact\\-us(?:/)?$"
+    },
+    {
+      "page": "/contacts",
+      "regex": "^/contacts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contacts(?:/)?$"
+    },
+    {
+      "page": "/cookies",
+      "regex": "^/cookies(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/cookies(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/explore",
+      "regex": "^/explore(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/explore(?:/)?$"
+    },
+    {
+      "page": "/fail",
+      "regex": "^/fail(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/fail(?:/)?$"
+    },
+    {
+      "page": "/faqs",
+      "regex": "^/faqs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/faqs(?:/)?$"
+    },
+    {
+      "page": "/favicon.ico",
+      "regex": "^/favicon\\.ico(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/favicon\\.ico(?:/)?$"
+    },
+    {
+      "page": "/fix-account",
+      "regex": "^/fix\\-account(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/fix\\-account(?:/)?$"
+    },
+    {
+      "page": "/forgot-password",
+      "regex": "^/forgot\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/forgot\\-password(?:/)?$"
+    },
+    {
+      "page": "/gdpr",
+      "regex": "^/gdpr(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/gdpr(?:/)?$"
+    },
+    {
+      "page": "/help-center",
+      "regex": "^/help\\-center(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/help\\-center(?:/)?$"
+    },
+    {
+      "page": "/investors",
+      "regex": "^/investors(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/investors(?:/)?$"
+    },
+    {
+      "page": "/kyc",
+      "regex": "^/kyc(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/kyc(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/notifications",
+      "regex": "^/notifications(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/notifications(?:/)?$"
+    },
+    {
+      "page": "/order-success",
+      "regex": "^/order\\-success(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/order\\-success(?:/)?$"
+    },
+    {
+      "page": "/orders",
+      "regex": "^/orders(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/orders(?:/)?$"
+    },
+    {
+      "page": "/partnerships",
+      "regex": "^/partnerships(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/partnerships(?:/)?$"
+    },
+    {
+      "page": "/payment-methods",
+      "regex": "^/payment\\-methods(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/payment\\-methods(?:/)?$"
+    },
+    {
+      "page": "/press",
+      "regex": "^/press(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/press(?:/)?$"
+    },
+    {
+      "page": "/privacy",
+      "regex": "^/privacy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy(?:/)?$"
+    },
+    {
+      "page": "/product/upload",
+      "regex": "^/product/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/product/upload(?:/)?$"
+    },
+    {
+      "page": "/profile",
+      "regex": "^/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/profile(?:/)?$"
+    },
+    {
+      "page": "/profile/edit",
+      "regex": "^/profile/edit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/profile/edit(?:/)?$"
+    },
+    {
+      "page": "/register",
+      "regex": "^/register(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register(?:/)?$"
+    },
+    {
+      "page": "/register/brand",
+      "regex": "^/register/brand(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register/brand(?:/)?$"
+    },
+    {
+      "page": "/register/company",
+      "regex": "^/register/company(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register/company(?:/)?$"
+    },
+    {
+      "page": "/register/personal",
+      "regex": "^/register/personal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/register/personal(?:/)?$"
+    },
+    {
+      "page": "/returns-refunds",
+      "regex": "^/returns\\-refunds(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/returns\\-refunds(?:/)?$"
+    },
+    {
+      "page": "/search",
+      "regex": "^/search(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/search(?:/)?$"
+    },
+    {
+      "page": "/search-users",
+      "regex": "^/search\\-users(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/search\\-users(?:/)?$"
+    },
+    {
+      "page": "/seller/dashboard",
+      "regex": "^/seller/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/dashboard(?:/)?$"
+    },
+    {
+      "page": "/seller/orders",
+      "regex": "^/seller/orders(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/seller/orders(?:/)?$"
+    },
+    {
+      "page": "/settings",
+      "regex": "^/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/settings(?:/)?$"
+    },
+    {
+      "page": "/shipping-info",
+      "regex": "^/shipping\\-info(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/shipping\\-info(?:/)?$"
+    },
+    {
+      "page": "/size-guide",
+      "regex": "^/size\\-guide(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/size\\-guide(?:/)?$"
+    },
+    {
+      "page": "/success",
+      "regex": "^/success(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/success(?:/)?$"
+    },
+    {
+      "page": "/support",
+      "regex": "^/support(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/support(?:/)?$"
+    },
+    {
+      "page": "/sustainability",
+      "regex": "^/sustainability(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sustainability(?:/)?$"
+    },
+    {
+      "page": "/terms",
+      "regex": "^/terms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/terms(?:/)?$"
+    },
+    {
+      "page": "/test-email",
+      "regex": "^/test\\-email(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/test\\-email(?:/)?$"
+    },
+    {
+      "page": "/test-profile-image",
+      "regex": "^/test\\-profile\\-image(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/test\\-profile\\-image(?:/)?$"
+    },
+    {
+      "page": "/track-order",
+      "regex": "^/track\\-order(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/track\\-order(?:/)?$"
+    },
+    {
+      "page": "/upload",
+      "regex": "^/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/upload(?:/)?$"
+    },
+    {
+      "page": "/upload/reel",
+      "regex": "^/upload/reel(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/upload/reel(?:/)?$"
+    },
+    {
+      "page": "/upload/story",
+      "regex": "^/upload/story(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/upload/story(?:/)?$"
+    },
+    {
+      "page": "/videos",
+      "regex": "^/videos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/videos(?:/)?$"
+    },
+    {
+      "page": "/wishlist",
+      "regex": "^/wishlist(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/wishlist(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "RSC",
+    "varyHeader": "RSC, Next-Router-State-Tree, Next-Router-Prefetch, Next-Router-Segment-Prefetch",
+    "prefetchHeader": "Next-Router-Prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "Next-Router-Segment-Prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments"
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
