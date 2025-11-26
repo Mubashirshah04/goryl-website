@@ -1,0 +1,15 @@
+{
+  "projectPath": ".",
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-goryl-main-authRole",
+      "UnauthRoleArn": "arn:aws:iam::573437734883:role/amplify-goryl-main-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::573437734883:role/amplify-goryl-main-authRole",
+      "Region": "ap-south-1",
+      "DeploymentBucketName": "amplify-goryl-main-deployment",
+      "UnauthRoleName": "amplify-goryl-main-unauthRole",
+      "StackName": "amplify-goryl-main",
+      "StackId": "arn:aws:cloudformation:ap-south-1:573437734883:stack/amplify-goryl-main/main-stack"
+    }
+  }
+}
