@@ -3,12 +3,11 @@ version: 1
 # Frontend configuration for Amplify Hosting with Next.js
 frontend:
   phases:
-    # No build phase - we upload pre-built standalone
     build:
       commands:
-        - echo "Build already completed locally"
+        - npm run build
   artifacts:
-    baseDirectory: .next/standalone
+    baseDirectory: .next
     files:
       - '**/*'
   cache:
