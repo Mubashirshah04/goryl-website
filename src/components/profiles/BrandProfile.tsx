@@ -702,20 +702,6 @@ export default function BrandProfile({
         {profile.username && (
           <p className="text-muted-foreground text-sm mb-1">@{profile.username}</p>
         )}
-        <div className="flex space-x-4 mb-2">
-          <button
-            onClick={() => handleFollowersClick('followers')}
-            className="text-muted-foreground text-sm hover:text-primary transition-colors"
-          >
-            {formatCount(followersCount)} followers
-          </button>
-          <button
-            onClick={() => handleFollowersClick('following')}
-            className="text-muted-foreground text-sm hover:text-primary transition-colors"
-          >
-            {formatCount(followingCount)} following
-          </button>
-        </div>
         <p className="text-muted-foreground text-sm leading-relaxed">
           {profile.bio || profile.about || 'Welcome to my brand! Discover amazing products and connect with our community.'}
         </p>
@@ -1142,72 +1128,6 @@ export default function BrandProfile({
           isLoggedIn={isLoggedIn}
         />
       </div>
-
-      {/* Followers/Following Modal */}
-      {showFollowersModal && (
-        <div className="fixed inset-0 bg-transparent z-50 flex items-center justify-center p-4">
-          <div className="bg-background rounded-xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col border border-border">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h3 className="text-foreground font-semibold text-lg">
-                {followersType === 'followers' ? 'Followers' : 'Following'}
-              </h3>
-              <button
-                onClick={() => setShowFollowersModal(false)}
-                className="p-2 hover:bg-accent rounded-full transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              {followersType === 'followers' ? (
-                Array.isArray(profile.followers) && profile.followers.length > 0 ? (
-                  <div className="space-y-3">
-                    {profile.followers.map((followerId: string, index: number) => (
-                      <div key={index} className="flex items-center space-x-3 p-3 bg-accent rounded-lg">
-                        <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">Follower {index + 1}</p>
-                          <p className="text-sm text-muted-foreground">@{followerId}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">No followers yet</p>
-                  </div>
-                )
-              ) : (
-                Array.isArray(profile.following) && profile.following.length > 0 ? (
-                  <div className="space-y-3">
-                    {profile.following.map((followingId: string, index: number) => (
-                      <div key={index} className="flex items-center space-x-3 p-3 bg-accent rounded-lg">
-                        <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                          <Users className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-foreground">Following {index + 1}</p>
-                          <p className="text-sm text-muted-foreground">@{followingId}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">Not following anyone yet</p>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Share Modal */}
       {showShareModal && (

@@ -81,6 +81,7 @@ export default function NormalUserProfile({
   const [showMoodModal, setShowMoodModal] = useState(false);
   const [showCallModal, setShowCallModal] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string>('');
+  const [showMenuDropdown, setShowMenuDropdown] = useState(false);
   
   // Clean follower and following counts to remove any strange text
   const cleanFollowCount = (count: any): number => {
@@ -209,117 +210,95 @@ export default function NormalUserProfile({
       {/* Top Navigation */}
       <div className="flex items-center justify-end p-4 border-b border-border">
         <div className="flex items-center space-x-4">
-          {isOwnProfile && (
-            <Link href="/profile/edit" className="p-2 hover:bg-accent rounded-full transition-colors">
-              <Camera className="w-6 h-6 text-foreground" />
-            </Link>
-          )}
-          <button 
-            className="p-2 hover:bg-accent rounded-full transition-colors"
-            onClick={async () => {
-              // Show options menu
-              const options = isOwnProfile 
-                ? ['Edit Profile', 'Settings', 'Share Profile', 'Logout']
-                : ['Share Profile', 'Report User', 'Block User'];
-              
-              // Build the prompt message properly
-              let message = 'Options:\n';
-              options.forEach((opt, i) => {
-                message += `${i + 1}. ${opt}\n`;
-              });
-              message += `\nEnter number (1-${options.length}):`;
-              
-              const choice = await new Promise<string | null>((resolve) => {
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                modal.innerHTML = `
-                  <div class="bg-white rounded-lg p-6 max-w-md mx-4">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Select Option</h3>
-                    <p class="text-gray-600 mb-4">${message}</p>
-                    <input type="number" id="choice" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter number">
-                    <div class="flex space-x-3 mt-4">
-                      <button id="cancel" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
-                      <button id="confirm" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Submit</button>
-                    </div>
-                  </div>
-                `;
-                document.body.appendChild(modal);
-                
-                modal.querySelector('#cancel')?.addEventListener('click', () => {
-                  document.body.removeChild(modal);
-                  resolve(null);
-                });
-                modal.querySelector('#confirm')?.addEventListener('click', () => {
-                  const choiceValue = (modal.querySelector('#choice') as HTMLInputElement)?.value;
-                  document.body.removeChild(modal);
-                  resolve(choiceValue || null);
-                });
-              });
-              const index = parseInt(choice || '0') - 1;
-              
-              if (index >= 0 && index < options.length) {
-                const selectedOption = options[index];
-                switch (selectedOption) {
-                  case 'Edit Profile':
-                    window.location.href = '/profile/edit';
-                    break;
-                  case 'Settings':
-                    window.location.href = '/settings';
-                    break;
-                  case 'Share Profile':
-                    if (navigator.share) {
-                      navigator.share({
-                        title: `${profile.name}'s Profile`,
-                        url: window.location.href
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success('Profile link copied to clipboard!');
-                    }
-                    break;
-                  case 'Logout':
-                    const confirmed = await new Promise<boolean>((resolve) => {
-                      const modal = document.createElement('div');
-                      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                      modal.innerHTML = `
-                        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
-                          <h3 class="text-lg font-semibold text-gray-900 mb-4">Logout</h3>
-                          <p class="text-gray-600 mb-6">Are you sure you want to logout?</p>
-                          <div class="flex space-x-3">
-                            <button id="cancel" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
-                            <button id="confirm" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Logout</button>
-                          </div>
-                        </div>
-                      `;
-                      document.body.appendChild(modal);
-                      
-                      modal.querySelector('#cancel')?.addEventListener('click', () => {
-                        document.body.removeChild(modal);
-                        resolve(false);
-                      });
-                      modal.querySelector('#confirm')?.addEventListener('click', () => {
-                        document.body.removeChild(modal);
-                        resolve(true);
-                      });
-                    });
-                    
-                    if (confirmed) {
-                      // Handle logout
-                      window.location.href = '/login';
-                    }
-                    break;
-                  case 'Report User':
-                    toast.info('Report feature coming soon!');
-                    break;
-                  case 'Block User':
-                    toast.info('Block feature coming soon!');
-                    break;
-                }
-              }
-            }}
-          >
-            <MoreHorizontal className="w-6 h-6 text-foreground" />
-          </button>
+          <div className="relative">
+            <button 
+              className="p-2 hover:bg-accent rounded-full transition-colors"
+              onClick={() => setShowMenuDropdown(!showMenuDropdown)}
+            >
+              <MoreHorizontal className="w-6 h-6 text-foreground" />
+            </button>
+            
+            {showMenuDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-background border border-border rounded-lg shadow-lg z-50">
+                {isOwnProfile ? (
+                  <>
+                    <Link href="/profile/edit" className="block px-4 py-2 hover:bg-accent text-foreground border-b border-border">
+                      Edit Profile
+                    </Link>
+                    <Link href="/settings" className="block px-4 py-2 hover:bg-accent text-foreground border-b border-border">
+                      Settings
+                    </Link>
+                    <button 
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: `${profile.name}'s Profile`,
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast.success('Profile link copied!');
+                        }
+                        setShowMenuDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-accent text-foreground border-b border-border"
+                    >
+                      Share Profile
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (confirm('Are you sure you want to logout?')) {
+                          window.location.href = '/login';
+                        }
+                        setShowMenuDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-accent text-red-500"
+                    >
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: `${profile.name}'s Profile`,
+                            url: window.location.href
+                          });
+                        } else {
+                          navigator.clipboard.writeText(window.location.href);
+                          toast.success('Profile link copied!');
+                        }
+                        setShowMenuDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-accent text-foreground border-b border-border"
+                    >
+                      Share Profile
+                    </button>
+                    <button 
+                      onClick={() => {
+                        toast.info('Report feature coming soon!');
+                        setShowMenuDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-accent text-foreground border-b border-border"
+                    >
+                      Report User
+                    </button>
+                    <button 
+                      onClick={() => {
+                        toast.info('Block feature coming soon!');
+                        setShowMenuDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-accent text-foreground"
+                    >
+                      Block User
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -330,7 +309,7 @@ export default function NormalUserProfile({
           <div className="relative">
             <ProfileImage 
               user={{
-                customPhotoURL: profile.customPhotoURL,
+                customPhotoURL: profile.customPhotoURL || profile.photoURL,
                 photoURL: profile.photoURL,
                 profilePic: profile.profilePic,
                 avatar: profile.avatar,
@@ -356,42 +335,6 @@ export default function NormalUserProfile({
             {profile.role === 'seller' ? 'Personal Shopping Assistant' : 'Normal User'}
           </p>
         </div>
-
-        {/* Followers & Following */}
-        <div className="flex justify-center space-x-8 mb-6">
-          <button onClick={openFollowers} className="text-center">
-            <p className="text-lg font-bold text-foreground">{followCounts.followers}</p>
-            <span className="text-muted-foreground text-xs">Followers</span>
-          </button>
-          <button onClick={openFollowing} className="text-center">
-            <p className="text-lg font-bold text-foreground">{followCounts.following}</p>
-            <span className="text-muted-foreground text-xs">Following</span>
-          </button>
-        </div>
-
-        {/* Followers/Following Modal */}
-        <Dialog open={showFollowers || showFollowing} onClose={closeModal} className="fixed z-50 inset-0 overflow-y-auto">
-          <div className="fixed inset-0 bg-black opacity-30" aria-hidden="true" />
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="relative bg-background rounded-lg shadow-lg w-full max-w-md mx-auto p-6 z-50 border border-border">
-              <Dialog.Title className="text-lg font-bold mb-4 text-foreground">{listTitle}</Dialog.Title>
-              <ul>
-                {userList.length === 0 && <li className="text-muted-foreground text-center py-8">No users found.</li>}
-                {userList.map((u) => (
-                  <li key={u.id} className="flex items-center space-x-3 py-2 cursor-pointer hover:bg-accent rounded px-2" onClick={() => goToUserProfile(u.id)}>
-                    <ProfileImage 
-                      user={u} 
-                      size={32} 
-                      className="rounded-full"
-                    />
-                    <span className="font-medium text-foreground">{u.name}</span>
-                  </li>
-                ))}
-              </ul>
-              <button onClick={closeModal} className="mt-4 w-full py-2 bg-accent rounded text-foreground">Close</button>
-            </div>
-          </div>
-        </Dialog>
 
         {/* Mood Selection Modal */}
         <Dialog open={showMoodModal} onClose={() => setShowMoodModal(false)} className="fixed z-50 inset-0 overflow-y-auto">
@@ -623,69 +566,16 @@ export default function NormalUserProfile({
                         </div>
                       </div>
                     ))}
-        {/* Order Details Modal */}
-        <Dialog open={showOrderModal} onClose={closeOrderModal} className="fixed z-50 inset-0 overflow-y-auto">
-          <div className="fixed inset-0 bg-black opacity-30" aria-hidden="true" />
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="relative bg-background rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 z-50 border border-border">
-              <Dialog.Title className="text-lg font-bold mb-4 text-foreground">Order Details</Dialog.Title>
-              {selectedOrder && (
-                <div>
-                  <div className="mb-4">
-                    <div className="flex items-center mb-2">
-                      {selectedOrder.items && selectedOrder.items[0]?.image && (
-                        <img src={selectedOrder.items[0].image} alt={selectedOrder.items[0].title} className="w-16 h-16 rounded object-cover mr-4" />
-                      )}
-                      <div>
-                        <div className="font-semibold text-foreground">{selectedOrder.items && selectedOrder.items[0]?.title}</div>
-                        <div className="text-xs text-muted-foreground">{selectedOrder.items && selectedOrder.items.length} item{selectedOrder.items && selectedOrder.items.length > 1 ? 's' : ''}</div>
-                        <div className="text-xs text-muted-foreground">{new Date(selectedOrder.createdAt.toDate()).toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                    <div className="text-sm font-medium text-foreground">Total: ${selectedOrder.totalAmount || '0.00'}</div>
-                    <div className="text-xs text-muted-foreground">Status: {selectedOrder.status}</div>
-                  </div>
-                  <div className="mb-4">
-                    <div className="font-semibold mb-1 text-foreground">Shipping</div>
-                    <div className="text-xs text-muted-foreground">{selectedOrder.shipping?.address || 'N/A'}</div>
-                    <div className="text-xs text-muted-foreground">Tracking: {selectedOrder.shipping?.tracking || 'N/A'}</div>
-                  </div>
-                  <div className="mb-4">
-                    <div className="font-semibold mb-1 text-foreground">Payment</div>
-                    <div className="text-xs text-muted-foreground">Method: {selectedOrder.payment?.method || 'N/A'}</div>
-                    <div className="text-xs text-muted-foreground">Status: {selectedOrder.payment?.status || 'N/A'}</div>
-                  </div>
-                  <div className="mb-4">
-                    <div className="font-semibold mb-1 text-foreground">Invoice</div>
-                    <div className="text-xs text-muted-foreground">Order ID: {selectedOrder.id}</div>
-                  </div>
-                </div>
-              )}
-              <button onClick={closeOrderModal} className="mt-4 w-full py-2 bg-accent rounded text-foreground">Close</button>
-            </div>
-          </div>
-        </Dialog>
-                    {isOwnProfile && (
-                      <Link 
-                        href="/orders" 
-                        className="block text-center text-primary hover:text-primary/90 font-medium text-sm mt-4"
-                      >
-                        View All Orders →
-                      </Link>
-                    )}
+                    <Link href="/orders" className="block mt-4 text-center py-2 px-4 bg-white text-foreground rounded-lg hover:bg-gray-100 transition-colors font-medium border border-border">
+                      View All Orders
+                    </Link>
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <ShoppingCart className="w-12 h-12 text-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">No purchases yet</p>
-                    {isOwnProfile && (
-                      <Link 
-                        href="/" 
-                        className="block text-primary hover:text-primary/90 font-medium text-sm mt-2"
-                      >
-                        Start Shopping →
-                      </Link>
-                    )}
+                    <p className="text-muted-foreground mb-4">No orders yet</p>
+                    <Link href="/orders" className="inline-block py-2 px-4 bg-white text-foreground rounded-lg hover:bg-gray-100 transition-colors font-medium border border-border">
+                      View All Orders
+                    </Link>
                   </div>
                 )}
               </div>

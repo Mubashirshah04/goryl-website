@@ -40,9 +40,18 @@ export default function ProfileImage({
       user?.avatar || 
       '';
 
-    // If no image URL is provided, use the default avatar
+    // Filter out placeholder URLs (via.placeholder.com, etc)
+    if (selectedImage && (
+      selectedImage.includes('via.placeholder.com') ||
+      selectedImage.includes('placeholder.com') ||
+      selectedImage.includes('Gemini_Generated_Image')
+    )) {
+      selectedImage = '';
+    }
+
+    // If no image URL is provided, don't show anything (no fallback avatar)
     if (!selectedImage) {
-      setImageSrc('https://api.dicebear.com/7.x/avataaars/svg?seed=Default');
+      setImageSrc('');
       setLoading(false);
       return;
     }
@@ -63,9 +72,7 @@ export default function ProfileImage({
     setLoading(false);
   }, [user]);
 
-  const profileImage = imgError 
-    ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default' 
-    : imageSrc || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Default';
+  const profileImage = imageSrc || '';
 
   // Handle image load and error events
   const handleImageLoad = () => {
