@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:full": "node start-goryl.js",
     "validate:env": "node scripts/validate-build-env.js",
-    "build": "node scripts/validate-build-env.js && set NODE_OPTIONS=--max-old-space-size=8192 && next build",
+    "build": "node scripts/validate-build-env.js && export NODE_OPTIONS=--max-old-space-size=8192 && next build",
     "build:firebase": "set NODE_OPTIONS=--max-old-space-size=8192 && next build && node copy-next-to-functions.js",
     "deploy": "npm run build:firebase && firebase deploy",
     "deploy:fix": "npm run build:firebase && firebase deploy --only functions && firebase deploy --only hosting",
