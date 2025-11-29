@@ -1,11 +1,10 @@
 version: 1
 
-# Frontend configuration for Amplify Hosting with Next.js
 frontend:
   phases:
-    pre_build:
+    preBuild:
       commands:
-        - npm install
+        - npm ci
     build:
       commands:
         - npm run build
