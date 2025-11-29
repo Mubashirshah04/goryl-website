@@ -1,11 +1,5 @@
-// ✅ AWS DYNAMODB - Firestore completely removed
-// Order service converted to AWS DynamoDB
-// TODO: Implement full AWS DynamoDB integration for orders
-
+// ✅ AWS DYNAMODB - Order service with AWS integration
 import { Order, OrderItem, Cart, Address, Payment, Product } from './types'
-
-// Stub implementations - returning empty/default data
-// These will be implemented with AWS DynamoDB later
 
 export const createOrder = async (
   userId: string,
@@ -14,9 +8,39 @@ export const createOrder = async (
   paymentMethod: 'cod' | 'card' | 'bank_transfer' | 'payoneer' = 'cod',
   billingAddress?: Address
 ): Promise<string> => {
-  console.warn('⚠️ createOrder: AWS implementation pending, returning mock order ID');
-  // TODO: Implement AWS DynamoDB order creation
-  return `order_${Date.now()}`;
+  try {
+    console.log('💾 Creating order for user:', userId);
+    
+    const orderData = {
+      userId,
+      items: cart.items,
+      subtotal: cart.subtotal || 0,
+      tax: (cart.subtotal || 0) * 0.1,
+      shipping: 5.99,
+      total: (cart.subtotal || 0) + 5.99 + ((cart.subtotal || 0) * 0.1),
+      shippingAddress,
+      billingAddress: billingAddress || shippingAddress,
+      paymentMethod,
+      trackingNumber: `GW${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
+    };
+
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create order');
+    }
+
+    const result = await response.json();
+    console.log('✅ Order created successfully:', result.id);
+    return result.id;
+  } catch (error) {
+    console.error('❌ Error creating order:', error);
+    throw error;
+  }
 }
 
 export const getOrder = async (orderId: string): Promise<Order | null> => {
@@ -82,13 +106,45 @@ export const getOrderStats = async (userId: string) => {
 }
 
 export const addShippingAddress = async (userId: string, address: Omit<Address, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
-  console.warn('⚠️ addShippingAddress: AWS implementation pending');
-  // TODO: Implement AWS DynamoDB address creation
-  return `address_${Date.now()}`;
+  try {
+    console.log('💾 Adding shipping address for user:', userId);
+    
+    const response = await fetch('/api/addresses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        ...address,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to add address');
+    }
+
+    const result = await response.json();
+    console.log('✅ Address added successfully:', result.id);
+    return result.id;
+  } catch (error) {
+    console.error('❌ Error adding address:', error);
+    throw error;
+  }
 }
 
 export const getUserAddresses = async (userId: string): Promise<Address[]> => {
-  console.warn('⚠️ getUserAddresses: AWS implementation pending');
-  // TODO: Implement AWS DynamoDB user addresses query
-  return [];
+  try {
+    console.log('🔍 Fetching addresses for user:', userId);
+    
+    const response = await fetch(`/api/addresses?userId=${userId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch addresses');
+    }
+
+    const addresses = await response.json();
+    console.log('📍 Addresses fetched:', addresses.length);
+    return addresses;
+  } catch (error) {
+    console.error('❌ Error fetching addresses:', error);
+    return [];
+  }
 }

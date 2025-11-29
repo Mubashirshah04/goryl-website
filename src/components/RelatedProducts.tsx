@@ -79,7 +79,7 @@ export function RelatedProducts({ products, currentProductId }: RelatedProductsP
               
               <div className="flex items-center justify-between">
                 <span className="text-lg font-bold text-gray-900 dark:text-white">
-                  ${product.price}
+                  Rs {product.price}
                 </span>
                 
                 <div className="flex items-center gap-3 text-gray-500">

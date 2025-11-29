@@ -32,6 +32,7 @@ import {
 import { ProductImageGallery } from '@/components/ProductImageGallery';
 import ProductReviews from '@/components/ProductReviews';
 import ProductComments from '@/components/ProductComments';
+import CommentDialog from '@/components/CommentDialog';
 import { RelatedProducts } from '@/components/RelatedProducts';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useSimilarProducts } from '@/hooks/useRecommendations';
@@ -116,6 +117,7 @@ export default function ProductPageClient({ productId }: { productId: string }) 
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [showComments, setShowComments] = useState(false);
+  const [showCommentDialog, setShowCommentDialog] = useState(false);
   const [showReviews, setShowReviews] = useState(false);
   const [reviews, setReviews] = useState<any[]>([]);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -395,21 +397,15 @@ export default function ProductPageClient({ productId }: { productId: string }) 
   }, [productId, product]);
 
 
-  // Check like status
+  // Check like status using AWS DynamoDB
   useEffect(() => {
-    if (!product || !user) return;
+    if (!product || !user || !productId) return;
 
     const checkLikeStatus = async () => {
       try {
-        const likeQuery = query(
-          collection(db, 'likes'),
-          where('userId', '==', user.sub),
-          where('productId', '==', productId),
-          where('type', '==', 'product')
-        );
-        
-        const likeSnapshot = await getDocs(likeQuery);
-        setIsLiked(!likeSnapshot.empty);
+        const { isItemLiked } = await import('@/lib/awsLikeService');
+        const liked = await isItemLiked(user.sub, 'product', productId);
+        setIsLiked(liked);
       } catch (error) {
         console.error('Error checking like status:', error);
       }
@@ -480,7 +476,10 @@ export default function ProductPageClient({ productId }: { productId: string }) 
   };
 
   const handleLike = async () => {
-    if (!product || !user || !productId || productId.trim() === '') return;
+    if (!product || !user || !productId || productId.trim() === '') {
+      toast.error('Please login to like products');
+      return;
+    }
 
     const newLikedState = !isLiked;
     const increment_value = newLikedState ? 1 : -1;
@@ -490,32 +489,14 @@ export default function ProductPageClient({ productId }: { productId: string }) 
       setIsLiked(newLikedState);
       setLikeCount(prev => prev + increment_value);
       
-      if (newLikedState) {
-        // Add like to likes collection
-        await addDoc(collection(db, 'likes'), {
-          userId: user.sub,
-          productId: productId,
-          type: 'product',
-          createdAt: new Date()
-        });
-      } else {
-        // Remove like from likes collection
-        const likeQuery = query(
-          collection(db, 'likes'),
-          where('userId', '==', user.sub),
-          where('productId', '==', productId),
-          where('type', '==', 'product')
-        );
-        const likeSnapshot = await getDocs(likeQuery);
-        const deletePromises = likeSnapshot.docs.map(doc => deleteDoc(doc.ref));
-        await Promise.all(deletePromises);
-      }
+      // Update AWS DynamoDB
+      const { likeItem, unlikeItem } = await import('@/lib/awsLikeService');
       
-      // Update product like count
-      const productRef = doc(db, 'products', productId);
-      await updateDoc(productRef, {
-        likeCount: increment(increment_value)
-      });
+      if (newLikedState) {
+        await likeItem(user.sub, 'product', productId);
+      } else {
+        await unlikeItem(user.sub, 'product', productId);
+      }
       
       toast.success(newLikedState ? 'Added to favorites!' : 'Removed from favorites!');
     } catch (error) {
@@ -743,12 +724,12 @@ export default function ProductPageClient({ productId }: { productId: string }) 
             <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
               <div className="flex items-center space-x-4 mb-2">
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                  ${product.price.toFixed(2)}
+                  Rs {product.price.toFixed(2)}
                 </span>
                 {product.originalPrice && product.originalPrice > product.price && (
                   <>
                     <span className="text-xl text-gray-500 dark:text-gray-400 line-through">
-                      ${product.originalPrice.toFixed(2)}
+                      Rs {product.originalPrice.toFixed(2)}
                     </span>
                     <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm px-2 py-1 rounded">
                       {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
@@ -1068,11 +1049,11 @@ export default function ProductPageClient({ productId }: { productId: string }) 
               </button>
 
               <button
-                onClick={() => setShowComments(!showComments)}
+                onClick={() => setShowCommentDialog(true)}
                 className="flex items-center px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                <span className="text-sm">Q&A ({questions.length || 0})</span>
+                <span className="text-sm">Comments</span>
               </button>
             </div>
           </div>
@@ -1631,6 +1612,13 @@ export default function ProductPageClient({ productId }: { productId: string }) 
             )}
           </div>
         )}
+
+        {/* Comment Dialog */}
+        <CommentDialog 
+          isOpen={showCommentDialog}
+          onClose={() => setShowCommentDialog(false)}
+          productId={productId}
+        />
       </div>
     </div>
   );

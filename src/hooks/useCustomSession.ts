@@ -88,6 +88,22 @@ export function useSession() {
   };
 }
 
+// Alias for backwards compatibility
+export function useCustomSession() {
+  const { data, status } = useSession();
+  return {
+    session: data?.user ? {
+      userId: data.user.id,
+      username: data.user.username,
+      name: data.user.name,
+      email: data.user.email,
+      role: data.user.role,
+      picture: data.user.image
+    } : null,
+    status
+  };
+}
+
 export async function signOut() {
   try {
     // Call Firebase Function signout

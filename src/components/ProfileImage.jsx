@@ -4,40 +4,46 @@ export default function ProfileImage({ user, size = 128, className = '' }) {
     const [imgError, setImgError] = useState(false);
     const [loading, setLoading] = useState(true);
     const [imageSrc, setImageSrc] = useState('');
-    // Profile image priority:
-    // 1. Firebase storage uploaded image (customPhotoURL)
-    // 2. Google Auth photoURL
+    // Profile image priority (AWS DynamoDB):
+    // 1. AWS S3 uploaded image (customPhotoURL)
+    // 2. AWS S3 photoURL
     // 3. Alternative field names (profilePic, avatar)
     // 4. Default avatar
     useEffect(() => {
         // Reset state when user changes
         setImgError(false);
         setLoading(true);
-        // Select the appropriate image URL - use user's own profile picture
-        let selectedImage = (user === null || user === void 0 ? void 0 : user.customPhotoURL) ||
-            (user === null || user === void 0 ? void 0 : user.photoURL) ||
-            (user === null || user === void 0 ? void 0 : user.profilePic) ||
-            (user === null || user === void 0 ? void 0 : user.avatar) ||
+        
+        if (!user) {
+            setImageSrc('https://api.dicebear.com/7.x/avataaars/svg?seed=Default');
+            setLoading(false);
+            return;
+        }
+        
+        // Select the appropriate image URL - prioritize AWS S3 URLs
+        let selectedImage = user?.customPhotoURL ||
+            user?.photoURL ||
+            user?.profilePic ||
+            user?.avatar ||
             '';
+        
         // If no image URL is provided, use the default avatar
         if (!selectedImage) {
             setImageSrc('https://api.dicebear.com/7.x/avataaars/svg?seed=Default');
             setLoading(false);
             return;
         }
-        // Handle different types of image URLs
-        if (selectedImage.includes('firebasestorage.googleapis.com') || selectedImage.includes('firebasestorage.app')) {
-            // For Firebase Storage URLs, ensure proper format
-            setImageSrc(selectedImage);
+        
+        // Filter out blob URLs - only use valid S3 or data URLs
+        if (selectedImage.startsWith('blob:')) {
+            console.warn('⚠️ Blob URL detected, using default avatar');
+            setImageSrc('https://api.dicebear.com/7.x/avataaars/svg?seed=Default');
+            setLoading(false);
+            return;
         }
-        // For Google Auth photos, we might need to handle CORS issues
-        else if (selectedImage.includes('googleusercontent.com')) {
-            setImageSrc(selectedImage);
-        }
-        // For other images, including default avatars, use as is
-        else {
-            setImageSrc(selectedImage);
-        }
+        
+        // Use the image URL as-is (S3, data URL, or other valid URLs)
+        setImageSrc(selectedImage);
         setLoading(false);
     }, [user]);
     const profileImage = imgError

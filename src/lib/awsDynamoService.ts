@@ -157,7 +157,7 @@ export interface ProductFilters {
   minPrice?: number;
   maxPrice?: number;
   sellerId?: string;
-  status?: 'active' | 'inactive' | 'draft';
+  status?: 'active' | 'inactive' | 'draft' | 'pending';
   search?: string;
 }
 
@@ -351,33 +351,32 @@ export const getProducts = async (
     } else {
       // Use Scan for general queries (slower but more flexible)
       let filterExpression = '';
-      const expressionAttributeNames: any = {
-        '#status': 'status' // status is a reserved keyword, must use alias
-      };
+      const expressionAttributeNames: any = {};
       const expressionAttributeValues: any = {};
 
+      // Only filter by status if explicitly provided
       if (filters.status) {
+        expressionAttributeNames['#status'] = 'status';
         filterExpression = '#status = :status';
         expressionAttributeValues[':status'] = filters.status;
-      } else {
-        filterExpression = '#status = :status';
-        expressionAttributeValues[':status'] = 'active';
       }
 
       if (filters.minPrice !== undefined) {
-        filterExpression += ' AND price >= :minPrice';
+        if (filterExpression) filterExpression += ' AND ';
+        filterExpression += 'price >= :minPrice';
         expressionAttributeValues[':minPrice'] = filters.minPrice;
       }
       if (filters.maxPrice !== undefined) {
-        filterExpression += ' AND price <= :maxPrice';
+        if (filterExpression) filterExpression += ' AND ';
+        filterExpression += 'price <= :maxPrice';
         expressionAttributeValues[':maxPrice'] = filters.maxPrice;
       }
 
       command = new ScanCommand({
         TableName: PRODUCTS_TABLE,
-        FilterExpression: filterExpression,
-        ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
+        FilterExpression: filterExpression || undefined,
+        ExpressionAttributeNames: Object.keys(expressionAttributeNames).length > 0 ? expressionAttributeNames : undefined,
+        ExpressionAttributeValues: Object.keys(expressionAttributeValues).length > 0 ? expressionAttributeValues : undefined,
         Limit: limitCount,
       });
     }
@@ -492,7 +491,7 @@ export const createProduct = async (product: Omit<Product, 'id' | 'createdAt' | 
 /**
  * Update product
  */
-export const updateProduct = async (productId: string, updates: Partial<Product>): Promise<void> => {
+export const updateProduct = async (productId: string, updates: Partial<Product>): Promise<Product | null> => {
   try {
     const updateExpression: string[] = [];
     const expressionAttributeValues: any = {};
@@ -515,13 +514,16 @@ export const updateProduct = async (productId: string, updates: Partial<Product>
       UpdateExpression: `SET ${updateExpression.join(', ')}`,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW'
     });
 
-    await docClient.send(command);
+    const result = await docClient.send(command);
 
     // Clear cache
     clearProductCache();
     productCache.delete(`product_${productId}`);
+
+    return result.Attributes as Product || null;
   } catch (error) {
     console.error('Error updating product in DynamoDB:', error);
     throw error;

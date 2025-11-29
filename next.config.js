@@ -34,16 +34,55 @@ const nextConfig = {
 
   // ✅ Performance: Image optimization
   images: {
-    domains: [
-      "firebasestorage.googleapis.com",
-      "lh3.googleusercontent.com",
-      "api.dicebear.com",
-      "ui-avatars.com",
-      "images.unsplash.com",
-      "source.unsplash.com",
-      "localhost",
-      "imagedelivery.net", // Cloudflare Images
-      "cloudflare.com",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "api.dicebear.com",
+      },
+      {
+        protocol: "https",
+        hostname: "ui-avatars.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "source.unsplash.com",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
+      {
+        protocol: "https",
+        hostname: "imagedelivery.net",
+      },
+      {
+        protocol: "https",
+        hostname: "cloudflare.com",
+      },
+      {
+        protocol: "https",
+        hostname: "goryl-storage.s3.ap-south-1.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.s3.ap-south-1.amazonaws.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.s3.amazonaws.com",
+      },
     ],
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
@@ -138,10 +177,10 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
-  // ✅ Use export output type for Firebase compatibility
-  // output: "export", // Commented out for SSR with Firebase Functions
+  // ✅ Use standalone output for Amplify Hosting with Node.js server
+  output: "standalone",
 
-  // ✅ Firebase deployment specific settings
+  // ✅ Amplify deployment specific settings
   poweredByHeader: false,
   generateEtags: false,
 

@@ -460,8 +460,8 @@ export default function ProductPageClient({ productId }) {
                 <h3 className="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-2">Special Offers</h3>
                 <div className="space-y-1 text-sm text-orange-700 dark:text-orange-300">
                   <div>• Bank Offer: 10% instant discount on HDFC Bank Credit Cards</div>
-                  <div>• No Cost EMI: Available on orders above $50</div>
-                  <div>• Exchange Offer: Up to $25 off on exchange</div>
+                  <div>• No Cost EMI: Available on orders above Rs 50</div>
+                  <div>• Exchange Offer: Up to Rs 25 off on exchange</div>
                 </div>
               </div>
             </div>
@@ -470,11 +470,11 @@ export default function ProductPageClient({ productId }) {
             <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
               <div className="flex items-center space-x-4 mb-2">
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                  ${product.price.toFixed(2)}
+                  Rs {product.price.toFixed(2)}
                 </span>
                 {product.originalPrice && product.originalPrice > product.price && (<>
                     <span className="text-xl text-gray-500 dark:text-gray-400 line-through">
-                      ${product.originalPrice.toFixed(2)}
+                      Rs {product.originalPrice.toFixed(2)}
                     </span>
                     <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 text-sm px-2 py-1 rounded">
                       {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off
@@ -677,7 +677,7 @@ export default function ProductPageClient({ productId }) {
                   <span className="font-medium text-blue-800 dark:text-blue-200">EMI Options Available</span>
                 </div>
                 <div className="text-sm text-blue-700 dark:text-blue-300">
-                  Starting from ${(product.price / 12).toFixed(2)}/month. No Cost EMI available
+                  Starting from Rs {(product.price / 12).toFixed(2)}/month. No Cost EMI available
                 </div>
               </div>
             </div>

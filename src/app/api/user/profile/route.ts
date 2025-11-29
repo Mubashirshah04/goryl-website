@@ -131,9 +131,39 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    await updateProfile(userId, updates);
+    // Filter out blob URLs - only save valid S3 URLs or data URLs
+    const cleanedUpdates = { ...updates };
+    
+    if (cleanedUpdates.photoURL && cleanedUpdates.photoURL.startsWith('blob:')) {
+      delete cleanedUpdates.photoURL;
+      console.warn('⚠️ Filtered out blob URL from photoURL');
+    }
+    
+    if (cleanedUpdates.customPhotoURL && cleanedUpdates.customPhotoURL.startsWith('blob:')) {
+      delete cleanedUpdates.customPhotoURL;
+      console.warn('⚠️ Filtered out blob URL from customPhotoURL');
+    }
 
-    return NextResponse.json({ success: true });
+    if (cleanedUpdates.bannerImage && cleanedUpdates.bannerImage.startsWith('blob:')) {
+      delete cleanedUpdates.bannerImage;
+      console.warn('⚠️ Filtered out blob URL from bannerImage');
+    }
+
+    if (cleanedUpdates.coverImage && cleanedUpdates.coverImage.startsWith('blob:')) {
+      delete cleanedUpdates.coverImage;
+      console.warn('⚠️ Filtered out blob URL from coverImage');
+    }
+
+    await updateProfile(userId, cleanedUpdates);
+
+    // Fetch updated profile to return
+    const updatedProfile = await getUserProfile(userId);
+
+    return NextResponse.json({ 
+      success: true,
+      data: updatedProfile,
+      message: 'Profile updated successfully'
+    });
   } catch (error: any) {
     console.error('Error updating user profile:', error);
     return NextResponse.json(

@@ -1,6 +1,5 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Star, MoreHorizontal, MessageCircle, Share2, Camera, Edit3, ShoppingCart, Package, TrendingUp, Users, Phone, Mail, MapPin, Globe, Instagram, Facebook, Twitter, BarChart3, } from 'lucide-react';
 import { useUserProductsStore } from '@/store/userProductsStore';
@@ -239,7 +238,7 @@ export default function BrandProfile({ profile, isOwnProfile, isFollowing, onFol
     return (<div className="min-h-screen bg-gray-900 text-white">
       {/* Banner */}
       <div className="relative h-40 w-full bg-gradient-to-r from-gray-800 to-gray-700">
-        {bannerUrl ? (<Image src={bannerUrl} alt="Banner" fill className="object-cover" onError={(e) => {
+        {bannerUrl ? (<img src={bannerUrl} alt="Banner" className="w-full h-full object-cover" onError={(e) => {
                 const target = e.target;
                 // Don't set a fallback that doesn't exist, just hide the image
                 target.style.display = 'none';
@@ -258,7 +257,7 @@ export default function BrandProfile({ profile, isOwnProfile, isFollowing, onFol
           <div className="flex items-center space-x-4">
             <div className="relative">
               <div className="relative w-24 h-24 rounded-full border-4 border-gray-900 overflow-hidden bg-gray-200">
-                {logoUrl ? (<Image src={logoUrl} alt="Brand Logo" fill className="object-cover" onError={(e) => {
+                {logoUrl ? (<img src={logoUrl} alt="Brand Logo" className="w-full h-full object-cover" onError={(e) => {
                 const target = e.target;
                 // Don't set a fallback that doesn't exist, just hide the image
                 target.style.display = 'none';
@@ -420,7 +419,7 @@ export default function BrandProfile({ profile, isOwnProfile, isFollowing, onFol
         {productsLoading ? (<p className="text-gray-400 dark:text-gray-500">Loading products...</p>) : products.length > 0 ? (<div className="grid grid-cols-2 gap-4">
             {products.slice(0, 4).map((product) => (<div key={product.id} className="bg-gray-800 p-3 rounded-lg flex flex-col items-center">
                 <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-700">
-                  <Image src={product.images[0] || '/product-placeholder.jpg'} alt={product.title} fill className="object-cover" onError={(e) => {
+                  <img src={product.images[0] || '/product-placeholder.jpg'} alt={product.title} className="w-full h-full object-cover" onError={(e) => {
                     const target = e.target;
                     target.src = '/product-placeholder.jpg';
                 }}/>
@@ -438,7 +437,7 @@ export default function BrandProfile({ profile, isOwnProfile, isFollowing, onFol
             {reviews.slice(0, 3).map((review) => (<div key={review.id} className="bg-gray-800 p-4 rounded-lg">
                 <div className="flex items-center mb-2">
                   <div className="relative w-8 h-8 rounded-full overflow-hidden mr-2 bg-gray-700">
-                    <Image src={review.userPhoto || '/default-avatar.png'} alt={review.userName} fill className="object-cover" onError={(e) => {
+                    <img src={review.userPhoto || '/default-avatar.png'} alt={review.userName} className="w-full h-full object-cover" onError={(e) => {
                     const target = e.target;
                     target.src = '/default-avatar.png';
                 }}/>

@@ -77,10 +77,16 @@ export function ProductImageGallery({ images, title, video }: ProductImageGaller
     }
   };
 
+  // Filter out blob URLs and data URLs - only keep real S3 URLs
+  const validImages = images.filter((img) => 
+    img && !img.startsWith('blob:') && !img.startsWith('data:') && 
+    (img.startsWith('http://') || img.startsWith('https://'))
+  );
+
   // Combine images and video into a single media array
   const mediaItems = [
-    ...images.map((img, index) => ({ type: 'image', src: img, index })),
-    ...(video ? [{ type: 'video', src: video, index: images.length }] : [])
+    ...validImages.map((img, index) => ({ type: 'image', src: img, index })),
+    ...(video && !video.startsWith('blob:') && !video.startsWith('data:') && (video.startsWith('http://') || video.startsWith('https://')) ? [{ type: 'video', src: video, index: validImages.length }] : [])
   ];
 
   const nextImage = () => {

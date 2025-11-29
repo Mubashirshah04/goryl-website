@@ -38,6 +38,7 @@ export default function EditProfilePage() {
     phone: '',
     email: '',
     photoURL: '',
+    bannerImage: '',
     username: ''
   });
   const [usernameLastChanged, setUsernameLastChanged] = useState<Date | null>(null); // Track when username was last changed
@@ -105,6 +106,7 @@ export default function EditProfilePage() {
         phone: profile.phone || '',
         email: profile.email || '',
         photoURL: profileImageUrl,
+        bannerImage: profile.bannerImage || profile.coverPhoto || '',
         username: profile.username || ''
       });
       
@@ -164,6 +166,12 @@ export default function EditProfilePage() {
         // Upload to AWS S3 using our AWS implementation
         const result = await uploadFile(file, `profile-images/${user.id}/${file.name}`);
         console.log('Upload completed to S3, download URL obtained:', result.url);
+
+        // Automatically save to database
+        await updateProfile(user.id, {
+          photoURL: result.url,
+          customPhotoURL: result.url
+        });
 
         // Update form data with new image URL
         setFormData(prev => ({
@@ -229,19 +237,28 @@ export default function EditProfilePage() {
     
     setLoading(true);
     try {
+      // Filter out blob URLs - only save valid S3 URLs or data URLs
+      const photoURLToSave = (formData.photoURL && !formData.photoURL.startsWith('blob:')) ? formData.photoURL : '';
+      const bannerImageToSave = (formData.bannerImage && !formData.bannerImage.startsWith('blob:')) ? formData.bannerImage : '';
+      
       await updateProfile(user.id, {
         name: formData.name,
         bio: formData.bio,
         about: formData.about,
         phone: formData.phone,
-        photoURL: formData.photoURL,
-        customPhotoURL: formData.photoURL, // Save to customPhotoURL as well
+        photoURL: photoURLToSave,
+        customPhotoURL: photoURLToSave, // Save to customPhotoURL as well
+        bannerImage: bannerImageToSave,
+        coverPhoto: bannerImageToSave, // Save to coverPhoto as well for compatibility
         username: formData.username
       });
       
-      // Update global profile store with the final saved image
-      if (formData.photoURL) {
-        updateProfilePicture(formData.photoURL);
+      // Update global profile store with the final saved images
+      if (photoURLToSave) {
+        updateProfilePicture(photoURLToSave);
+      }
+      if (bannerImageToSave) {
+        updateBannerImage(bannerImageToSave);
       }
       
       // Update localStorage cache so header shows new photo immediately
@@ -249,8 +266,10 @@ export default function EditProfilePage() {
       if (cachedProfile) {
         try {
           const profileData = JSON.parse(cachedProfile);
-          profileData.customPhotoURL = formData.photoURL;
-          profileData.photoURL = formData.photoURL;
+          profileData.customPhotoURL = photoURLToSave;
+          profileData.photoURL = photoURLToSave;
+          profileData.bannerImage = bannerImageToSave;
+          profileData.coverPhoto = bannerImageToSave;
           localStorage.setItem(`profile_${user.id}`, JSON.stringify(profileData));
         } catch (error) {
           console.warn('Failed to update cached profile:', error);
@@ -375,7 +394,7 @@ export default function EditProfilePage() {
 
         {/* Default Avatar Selection - Removed */}
 
-        {/* Username */}
+        {/* Username - Read only after approval */}
         <div className="mb-4">
           <label htmlFor="username" className="block text-sm font-medium text-black dark:text-gray-300 mb-1">
             Username
@@ -388,22 +407,14 @@ export default function EditProfilePage() {
               type="text"
               id="username"
               value={formData.username}
-              onChange={(e) => handleInputChange('username', e.target.value)}
-              className="block w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+              readOnly
+              className="block w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-black/70 dark:text-gray-400 cursor-not-allowed"
               placeholder="yourusername"
-              disabled={isUsernameChangeRestricted()} // Disable if change is restricted
             />
           </div>
-          {usernameLastChanged && (
-            <p className="mt-1 text-xs text-black/70 dark:text-gray-400">
-              {getUsernameChangeMessage()}
-            </p>
-          )}
-          {!usernameLastChanged && (
-            <p className="mt-1 text-xs text-black/70 dark:text-gray-400">
-              Your username must be unique. You can change it once every 30 days.
-            </p>
-          )}
+          <p className="mt-1 text-xs text-black/70 dark:text-gray-400">
+            Username cannot be changed after application approval.
+          </p>
         </div>
 
         {/* Name */}

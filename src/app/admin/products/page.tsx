@@ -21,7 +21,7 @@ export default function ProductManagementPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [sellerTypeFilter, setSellerTypeFilter] = useState<string>('all')
-  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'inactive' | 'draft'>('all')
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'inactive' | 'draft' | 'pending'>('all')
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -58,10 +58,11 @@ export default function ProductManagementPage() {
         const response = await fetch('/api/products?status=all');
         const data = await response.json();
         
-        console.log('🔄 Admin products loaded from AWS:', data.products?.length || 0, 'products');
+        const productsArray = data.data || data.products || [];
+        console.log('🔄 Admin products loaded from AWS:', productsArray.length, 'products');
         
-        setProducts(data.products || []);
-        setFilteredProducts(data.products || []);
+        setProducts(productsArray);
+        setFilteredProducts(productsArray);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast.error('Failed to load products');
@@ -108,7 +109,7 @@ export default function ProductManagementPage() {
     setSearchQuery(query)
   }
 
-  const handleProductAction = async (productId: string, action: 'activate' | 'deactivate' | 'draft' | 'delete') => {
+  const handleProductAction = async (productId: string, action: 'activate' | 'deactivate' | 'draft' | 'delete' | 'approve' | 'decline') => {
     setLoading(true)
     try {
       const { updateProduct, deleteProduct } = await import('@/lib/productService')
@@ -117,10 +118,12 @@ export default function ProductManagementPage() {
         setProducts(prev => prev.filter(product => product.id !== productId))
         toast.success('Product deleted successfully')
       } else {
-        let newStatus: 'active' | 'inactive' | 'draft' = 'active';
+        let newStatus: 'active' | 'inactive' | 'draft' | 'pending' = 'active';
         if (action === 'deactivate') newStatus = 'inactive';
         if (action === 'draft') newStatus = 'draft';
         if (action === 'activate') newStatus = 'active';
+        if (action === 'approve') newStatus = 'active';
+        if (action === 'decline') newStatus = 'inactive';
         await updateProduct(productId, { status: newStatus })
         setProducts(prev => prev.map(product => {
           if (product.id === productId) {
@@ -128,7 +131,14 @@ export default function ProductManagementPage() {
           }
           return product
         }))
-        toast.success(`Product status updated to ${newStatus}`)
+        const actionMessages: { [key: string]: string } = {
+          'approve': 'Product approved',
+          'decline': 'Product declined',
+          'activate': 'Product activated',
+          'deactivate': 'Product deactivated',
+          'draft': 'Product moved to draft'
+        };
+        toast.success(actionMessages[action] || `Product status updated to ${newStatus}`)
       }
     } catch (error) {
       console.error('Failed to update product:', error)
@@ -204,6 +214,7 @@ export default function ProductManagementPage() {
       case 'active': return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'inactive': return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'draft': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'pending': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
   }
@@ -356,7 +367,7 @@ export default function ProductManagementPage() {
             {/* Tabs */}
             <div className="flex flex-wrap items-center justify-between mb-6">
               <div className="flex space-x-1 bg-white/10 rounded-xl p-1">
-                    {(['all', 'active', 'inactive', 'draft'] as const).map((tab) => (
+                    {(['all', 'active', 'inactive', 'draft', 'pending'] as const).map((tab) => (
                       <motion.button
                         key={tab}
                         whileHover={{ scale: 1.05 }}
@@ -482,7 +493,8 @@ export default function ProductManagementPage() {
                           {product.status === 'active' && <CheckCircle className="w-3 h-3 mr-1" />}
                           {product.status === 'inactive' && <XCircle className="w-3 h-3 mr-1" />}
                           {product.status === 'draft' && <Clock className="w-3 h-3 mr-1" />}
-                          <span className="capitalize">{product.status}</span>
+                          {product.status === 'pending' && <Clock className="w-3 h-3 mr-1" />}
+                          <span className="capitalize">{product.status === 'pending' ? 'Under Review' : product.status}</span>
                         </span>
                       </td>
                       <td className="p-6">
@@ -517,7 +529,31 @@ export default function ProductManagementPage() {
                           >
                             <Eye className="w-4 h-4 text-blue-400" />
                           </motion.button>
-                          {product.status === 'inactive' && (
+                          {product.status === 'pending' && (
+                            <>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleProductAction(product.id ?? '', 'approve')}
+                                disabled={loading}
+                                className="p-2 bg-green-500/20 rounded-xl hover:bg-green-500/30 transition-colors border border-green-500/30"
+                                title="Approve Product"
+                              >
+                                <CheckCircle className="w-4 h-4 text-green-400" />
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => handleProductAction(product.id ?? '', 'decline')}
+                                disabled={loading}
+                                className="p-2 bg-red-500/20 rounded-xl hover:bg-red-500/30 transition-colors border border-red-500/30"
+                                title="Decline Product"
+                              >
+                                <XCircle className="w-4 h-4 text-red-400" />
+                              </motion.button>
+                            </>
+                          )}
+                          {product.status === 'inactive' && product.status !== 'pending' && (
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}

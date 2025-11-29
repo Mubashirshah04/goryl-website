@@ -60,22 +60,13 @@ export const useUserReviewsStore = create<UserReviewsStore>((set, get) => ({
   },
 
   fetchUserReviewsRealtime: (userId: string) => {
-    // ✅ AWS DynamoDB doesn't support realtime listeners
-    // Using polling approach instead
-    console.log('🔄 Setting up polling for reviews (AWS DynamoDB)');
-
-    // Initial fetch
+    // ✅ Fetch reviews once on mount - no polling
+    console.log('⭐ Fetching reviews for user:', userId);
     get().fetchUserReviews(userId);
 
-    // Poll every 15 seconds for updates
-    const intervalId = setInterval(() => {
-      get().fetchUserReviews(userId);
-    }, 15000);
-
-    // Return cleanup function
+    // Return cleanup function (no-op since we're not polling)
     return () => {
-      clearInterval(intervalId);
-      console.log('🛑 Stopped polling for reviews');
+      console.log('🛑 Cleaned up reviews subscription');
     };
   },
 

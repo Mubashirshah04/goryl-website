@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Star, ShoppingBag, Building2, Users, Edit, Phone, MapPin, Calendar, Mail, Trash2, Edit3, Eye } from 'lucide-react';
+import { Star, ShoppingBag, Building2, Users, Edit, Phone, MapPin, Calendar, Mail, Trash2, Edit3, Eye, Heart, Bookmark } from 'lucide-react';
 import { useUserProductsStore } from '@/store/userProductsStore';
 import { useUserReviewsStore } from '@/store/userReviewsStore';
-// ✅ AWS DYNAMODB - Firestore removed, using AWS services
+import { toast } from 'sonner';
+// ✅ AWS DYNAMODB - Using AWS services only
 
 
 interface PublicContentTabsProps {
@@ -44,21 +45,59 @@ export default function PublicContentTabs({ profile, isOwnProfile, isLoggedIn }:
     return null;
   }
 
-  const [activeTab, setActiveTab] = useState<'products' | 'reviews' | 'about' | 'company' | 'team'>('products');
-  const { products, loading: productsLoading, fetchUserProductsRealtime } = useUserProductsStore();
-  const { reviews, loading: reviewsLoading, fetchUserReviewsRealtime } = useUserReviewsStore();
+  const [activeTab, setActiveTab] = useState<'products' | 'reviews' | 'about' | 'company' | 'team' | 'liked' | 'saved'>('products');
+  const [likedProducts, setLikedProducts] = useState([]);
+  const [savedProducts, setSavedProducts] = useState([]);
+  const [likedSavedLoading, setLikedSavedLoading] = useState(false);
+  const { products, loading: productsLoading } = useUserProductsStore();
+  const { reviews, loading: reviewsLoading } = useUserReviewsStore();
 
+  // Fetch liked and saved products when tab changes
   useEffect(() => {
-    if (profile?.id) {
-      const unsubProducts = fetchUserProductsRealtime(profile.id);
-      const unsubReviews = fetchUserReviewsRealtime(profile.id);
-
-      return () => {
-        unsubProducts();
-        unsubReviews();
+    if ((activeTab === 'liked' || activeTab === 'saved') && isOwnProfile && isLoggedIn) {
+      const fetchLikedSaved = async () => {
+        setLikedSavedLoading(true);
+        try {
+          const response = await fetch(`/api/user/liked-saved?userId=${profile.id}&type=${activeTab}`);
+          if (response.ok) {
+            const data = await response.json();
+            const items = data.items || [];
+            
+            // Fetch full product details for each item
+            const productsWithDetails = await Promise.all(
+              items.map(async (item: any) => {
+                try {
+                  const productResponse = await fetch(`/api/products/${item.productId}`);
+                  if (productResponse.ok) {
+                    const responseData = await productResponse.json();
+                    const productData = responseData.data || responseData;
+                    return { ...item, product: productData };
+                  }
+                } catch (err) {
+                  console.error(`Error fetching product ${item.productId}:`, err);
+                }
+                return item;
+              })
+            );
+            
+            if (activeTab === 'liked') {
+              setLikedProducts(productsWithDetails);
+            } else {
+              setSavedProducts(productsWithDetails);
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching ${activeTab} products:`, error);
+        } finally {
+          setLikedSavedLoading(false);
+        }
       };
+      fetchLikedSaved();
     }
-  }, [profile?.id]);
+  }, [activeTab, isOwnProfile, isLoggedIn, profile.id]);
+
+  // Products and reviews are already fetched by parent BrandProfile component
+  // No need to fetch again here to avoid duplicate requests
 
 
   const formatCount = (count: number | undefined) => {
@@ -69,42 +108,56 @@ export default function PublicContentTabs({ profile, isOwnProfile, isLoggedIn }:
   };
 
 
-  // Delete product function
+  // Delete product function with UI confirmation
   const handleDeleteProduct = async (productId: string, productTitle: string) => {
-    const confirmed = await new Promise<boolean>((resolve) => {
+    return new Promise<void>((resolve) => {
+      // Create modal dialog
       const modal = document.createElement('div');
-      modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50';
       modal.innerHTML = `
-        <div class="bg-white rounded-lg p-6 max-w-md mx-4">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Delete Product</h3>
-          <p class="text-gray-600 mb-6">Are you sure you want to delete "${productTitle}"? This action cannot be undone.</p>
-          <div class="flex space-x-3">
-            <button id="cancel" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
-            <button id="confirm" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md mx-4 animate-in fade-in zoom-in duration-200">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Product?</h3>
+          <p class="text-gray-600 mb-6">Are you sure you want to delete <strong>"${productTitle}"</strong>? This action cannot be undone.</p>
+          <div class="flex gap-3">
+            <button id="cancel-btn" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+            <button id="delete-btn" class="flex-1 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors">Delete</button>
           </div>
         </div>
       `;
       document.body.appendChild(modal);
 
-      modal.querySelector('#cancel')?.addEventListener('click', () => {
+      // Cancel button
+      modal.querySelector('#cancel-btn')?.addEventListener('click', () => {
         document.body.removeChild(modal);
-        resolve(false);
+        resolve();
       });
-      modal.querySelector('#confirm')?.addEventListener('click', () => {
+
+      // Delete button
+      modal.querySelector('#delete-btn')?.addEventListener('click', async () => {
         document.body.removeChild(modal);
-        resolve(true);
+        
+        try {
+          // Delete product via AWS API
+          const response = await fetch(`/api/products/${productId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete');
+          }
+          
+          toast.success('Product deleted successfully');
+          // Refresh products list
+          setTimeout(() => window.location.reload(), 500);
+        } catch (error: any) {
+          console.error('Error deleting product:', error);
+          toast.error(error.message || 'Failed to delete product');
+        }
+        resolve();
       });
     });
-
-    if (!confirmed) return;
-
-    try {
-      await deleteDoc(doc(db, 'products', productId));
-      toast.success('Product deleted successfully');
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      toast.error('Failed to delete product');
-    }
   };
 
   // Edit product function
@@ -496,6 +549,114 @@ export default function PublicContentTabs({ profile, isOwnProfile, isLoggedIn }:
           </div>
         );
 
+      case 'liked':
+        return (
+          <div className="w-full">
+            {likedSavedLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : likedProducts.filter(item => item.product?.title && item.product?.price).length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {likedProducts.filter(item => item.product?.title && item.product?.price).map((item) => {
+                  const product = item.product;
+                  return (
+                    <Link href={`/product/${item.productId}`} key={item.id}>
+                      <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer h-full flex flex-col">
+                        {/* Product Image */}
+                        <div className="relative w-full h-40 bg-gray-100 overflow-hidden">
+                          {product?.images?.[0] ? (
+                            <img 
+                              src={product.images[0]} 
+                              alt={product?.title || 'Product'}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <ShoppingBag className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
+                            <Heart className="w-3 h-3 inline mr-1 fill-white" />
+                            Liked
+                          </div>
+                        </div>
+                        
+                        {/* Product Info */}
+                        <div className="p-3 flex-1 flex flex-col">
+                          <p className="text-sm font-semibold text-gray-800 line-clamp-2 mb-1">{product?.title}</p>
+                          <p className="text-xs text-gray-500 mb-2">₹{product?.price}</p>
+                          <p className="text-xs text-gray-400 mt-auto">Liked on {new Date(item.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+                <Heart className="w-16 h-16 text-gray-400 mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">No liked items yet</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm">Products you like will appear here</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'saved':
+        return (
+          <div className="w-full">
+            {likedSavedLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : savedProducts.filter(item => item.product?.title && item.product?.price).length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {savedProducts.filter(item => item.product?.title && item.product?.price).map((item) => {
+                  const product = item.product;
+                  return (
+                    <Link href={`/product/${item.productId}`} key={item.id}>
+                      <div className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden cursor-pointer h-full flex flex-col">
+                        {/* Product Image */}
+                        <div className="relative w-full h-40 bg-gray-100 overflow-hidden">
+                          {product?.images?.[0] ? (
+                            <img 
+                              src={product.images[0]} 
+                              alt={product?.title || 'Product'}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                              <ShoppingBag className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute top-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
+                            <Bookmark className="w-3 h-3 inline mr-1 fill-white" />
+                            Saved
+                          </div>
+                        </div>
+                        
+                        {/* Product Info */}
+                        <div className="p-3 flex-1 flex flex-col">
+                          <p className="text-sm font-semibold text-gray-800 line-clamp-2 mb-1">{product?.title}</p>
+                          <p className="text-xs text-gray-500 mb-2">₹{product?.price}</p>
+                          <p className="text-xs text-gray-400 mt-auto">Saved on {new Date(item.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700">
+                <Bookmark className="w-16 h-16 text-gray-400 mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">No saved items yet</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm">Products you save will appear here</p>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return null;
     }
@@ -507,6 +668,8 @@ export default function PublicContentTabs({ profile, isOwnProfile, isLoggedIn }:
     { id: 'about' as const, label: 'About' },
     ...((profile.role === 'brand' || profile.role === 'company') ? [{ id: 'company' as const, label: 'Company Info' }] : []),
     ...((profile.role === 'brand' || profile.role === 'company') ? [{ id: 'team' as const, label: 'Team' }] : []),
+    { id: 'liked' as const, label: 'Liked' },
+    { id: 'saved' as const, label: 'Saved' },
   ];
 
   return (

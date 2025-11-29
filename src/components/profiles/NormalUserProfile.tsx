@@ -70,7 +70,7 @@ export default function NormalUserProfile({
   onBack,
   isLoggedIn = true
 }: NormalUserProfileProps) {
-  const [activeTab, setActiveTab] = useState<'liked' | 'orders' | 'applications'>('orders');
+  const [activeTab, setActiveTab] = useState<'products' | 'reviews' | 'about' | 'liked' | 'saved' | 'orders' | 'applications'>('products');
   const { orders, loading: ordersLoading } = useUserOrders(profile.id, 5);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -560,16 +560,6 @@ export default function NormalUserProfile({
           <div className="border-t border-border mt-8 pt-6">
             <nav className="flex space-x-8 mb-6">
               <button
-                onClick={() => setActiveTab('liked')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'liked'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Liked
-              </button>
-              <button
                 onClick={() => setActiveTab('orders')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'orders'
@@ -593,24 +583,6 @@ export default function NormalUserProfile({
 
           {/* Tab Content */}
           <div className="mb-6">
-            {activeTab === 'liked' && (
-              <div>
-                <h2 className="text-lg font-bold mb-3 text-foreground">Liked Items</h2>
-                <div className="text-center py-8">
-                  <Heart className="w-12 h-12 text-foreground mx-auto mb-2" />
-                  <p className="text-muted-foreground">No liked items yet</p>
-                  {isOwnProfile && (
-                    <Link 
-                      href="/" 
-                      className="block text-primary hover:text-primary/90 font-medium text-sm mt-2"
-                    >
-                      Start Shopping →
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-
             {activeTab === 'orders' && (
               <div>
                 <h2 className="text-lg font-bold mb-3 text-foreground">Recent Purchases</h2>

@@ -40,11 +40,11 @@ export default function BeautyPage() {
         const matchesCategory = selectedFilters.categories.length === 0 ||
             selectedFilters.categories.includes(product.category);
         const matchesPrice = !selectedFilters.priceRange ||
-            (selectedFilters.priceRange === 'Under $15' && product.price < 15) ||
-            (selectedFilters.priceRange === '$15 - $30' && product.price >= 15 && product.price <= 30) ||
-            (selectedFilters.priceRange === '$30 - $50' && product.price >= 30 && product.price <= 50) ||
-            (selectedFilters.priceRange === '$50 - $100' && product.price >= 50 && product.price <= 100) ||
-            (selectedFilters.priceRange === 'Over $100' && product.price > 100);
+            (selectedFilters.priceRange === 'Under Rs 15' && product.price < 15) ||
+            (selectedFilters.priceRange === 'Rs 15 - Rs 30' && product.price >= 15 && product.price <= 30) ||
+            (selectedFilters.priceRange === 'Rs 30 - Rs 50' && product.price >= 30 && product.price <= 50) ||
+            (selectedFilters.priceRange === 'Rs 50 - Rs 100' && product.price >= 50 && product.price <= 100) ||
+            (selectedFilters.priceRange === 'Over Rs 100' && product.price > 100);
         const matchesRating = !selectedFilters.rating ||
             (selectedFilters.rating === '4+ Stars' && product.rating >= 4) ||
             (selectedFilters.rating === '4.5+ Stars' && product.rating >= 4.5) ||
@@ -273,9 +273,9 @@ export default function BeautyPage() {
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-gray-900 dark:text-white">${product.price}</span>
+                          <span className="font-bold text-gray-900 dark:text-white">Rs {product.price}</span>
                           {product.originalPrice > product.price && (<span className="text-sm text-gray-500 line-through">
-                              ${product.originalPrice}
+                              Rs {product.originalPrice}
                             </span>)}
                         </div>
                         <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
@@ -307,9 +307,9 @@ export default function BeautyPage() {
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-gray-900 dark:text-white">${product.price}</span>
+                          <span className="font-bold text-gray-900 dark:text-white">Rs {product.price}</span>
                           {product.originalPrice > product.price && (<span className="text-sm text-gray-500 line-through">
-                              ${product.originalPrice}
+                              Rs {product.originalPrice}
                             </span>)}
                         </div>
                         <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">

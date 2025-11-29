@@ -442,7 +442,7 @@ function SearchPageContent() {
                         </Link>
                         
                         <div className="flex items-center justify-between mb-3">
-                          <p className="text-lg font-bold text-gray-900 dark:text-white">${product.price}</p>
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">Rs {product.price}</p>
                           {product.stock > 0 ? (
                             <span className="text-green-600 text-sm">In Stock</span>
                           ) : (

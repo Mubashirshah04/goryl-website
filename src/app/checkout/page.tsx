@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,17 +8,14 @@ import {
   CreditCard, 
   Truck, 
   MapPin, 
-  Phone, 
-  Mail, 
   Building,
   CheckCircle,
   ArrowLeft,
   Lock
 } from 'lucide-react';
-import { useAuthStore } from '@/store/authStoreCognito';
+import { useCustomSession } from '@/hooks/useCustomSession';
 import { useCartStore } from '@/store/cartStore';
 import { createOrder, getUserAddresses, addShippingAddress } from '@/lib/orderService';
-import { processCardPayment } from '@/lib/paymentService';
 import { sendOrderConfirmationEmail } from '@/lib/emailService';
 import { sendOrderPlacedNotification } from '@/lib/notificationService';
 import { sendRealOrderEmail, requestNotificationPermission } from '@/lib/realEmailService';
@@ -72,7 +68,7 @@ const paymentMethods: PaymentMethod[] = [
 function CheckoutPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, userData } = useAuthStore();
+  const { session: user } = useCustomSession();
   const { cart, getCartTotal, clearCart } = useCartStore();
   
   const [loading, setLoading] = useState(false);
@@ -82,6 +78,8 @@ function CheckoutPageContent() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cod');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successOrderId, setSuccessOrderId] = useState('');
   const [cardDetails, setCardDetails] = useState({
     number: '',
     expMonth: '',
@@ -90,15 +88,23 @@ function CheckoutPageContent() {
     name: ''
   });
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-    firstName: userData?.name?.split(' ')[0] || '',
-    lastName: userData?.name?.split(' ').slice(1).join(' ') || '',
+    firstName: user?.name?.split(' ')[0] || '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
     addressLine1: '',
     city: '',
     state: '',
     postalCode: '',
     country: 'Pakistan',
-    phone: userData?.phone || ''
+    phone: user?.email || ''
   });
+
+  // Ref to track modal state for timeout callback
+  const modalStateRef = useRef(false);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    modalStateRef.current = showSuccessModal;
+  }, [showSuccessModal]);
 
   useEffect(() => {
     if (!user) {
@@ -107,7 +113,13 @@ function CheckoutPageContent() {
       return;
     }
 
-    console.log('🛒 Checkout: Cart state:', { cart, itemCount: cart?.items?.length });
+    console.log('🛒 Checkout: Cart state:', { cart, itemCount: cart?.items?.length, showModal: showSuccessModal });
+
+    // Don't redirect if success modal is showing
+    if (showSuccessModal) {
+      console.log('✅ Checkout: Success modal showing, preventing redirect');
+      return;
+    }
 
     // Check if cart has items immediately, if not wait for it to load
     if (cart && cart.items.length > 0) {
@@ -117,6 +129,12 @@ function CheckoutPageContent() {
       console.log('⏳ Checkout: Cart empty or loading, waiting...');
       // Give cart time to load (especially for Buy Now flow)
       const timer = setTimeout(() => {
+        // Check ref for current modal state (not stale closure)
+        if (modalStateRef.current) {
+          console.log('✅ Checkout: Success modal showing, preventing redirect');
+          return;
+        }
+        
         console.log('🕐 Checkout: Timer expired, checking cart again:', { cart, itemCount: cart?.items?.length });
         setCartLoading(false);
         if (!cart || cart.items.length === 0) {
@@ -129,7 +147,7 @@ function CheckoutPageContent() {
 
       return () => clearTimeout(timer);
     }
-  }, [user, cart, router]);
+  }, [user, cart, showSuccessModal]);
 
   // Load saved addresses
   useEffect(() => {
@@ -138,8 +156,8 @@ function CheckoutPageContent() {
     const loadSavedAddresses = async () => {
       if (user && isSubscribed) {
         try {
-          console.log('🏠 Loading saved addresses for user:', user.sub);
-          const addresses = await getUserAddresses(user.sub);
+          console.log('🏠 Loading saved addresses for user:', user.userId);
+          const addresses = await getUserAddresses(user.userId);
           console.log('📍 Raw addresses loaded:', addresses.length);
           
           if (!isSubscribed) return; // Component unmounted
@@ -198,7 +216,7 @@ function CheckoutPageContent() {
     return () => {
       isSubscribed = false;
     };
-  }, [user?.sub]); // Only depend on user ID, not savedAddresses.length
+  }, [user?.userId]); // Only depend on user ID, not savedAddresses.length
 
   const handleSavedAddressSelect = (address: Address) => {
     setSelectedAddressId(address.id);
@@ -245,7 +263,7 @@ function CheckoutPageContent() {
 
   const handlePlaceOrder = async () => {
     console.log('🚀 handlePlaceOrder called');
-    console.log('User:', user?.sub);
+    console.log('User:', user?.userId);
     console.log('Cart:', cart);
     console.log('Cart items:', cart?.items?.length);
     
@@ -289,26 +307,26 @@ function CheckoutPageContent() {
       };
 
       // Create shipping address
-      const addressId = await addShippingAddress(user.sub, cleanAddress);
+      const addressId = await addShippingAddress(user.userId, cleanAddress);
 
       // Create full address object for order
       const fullAddress = {
         ...cleanAddress,
         id: addressId,
-        userId: user.sub,
+        userId: user.userId,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
       console.log('📝 Creating order with data:', {
-        userId: user.sub,
+        userId: user.userId,
         cartItems: cart.items.length,
         address: fullAddress,
         paymentMethod: selectedPaymentMethod
       });
 
       const orderId = await createOrder(
-        user.sub,
+        user.userId,
         cart,
         fullAddress,
         selectedPaymentMethod as 'cod' | 'card' | 'payoneer' | 'bank_transfer'
@@ -348,13 +366,19 @@ function CheckoutPageContent() {
         );
 
         if (!paymentResult.success) {
-          toast.error(`Payment failed: ${paymentResult.error}`);
+          toast.error('Payment failed. Please try again.');
           setLoading(false);
           return;
         }
 
         toast.success('Payment processed successfully!');
       }
+
+      // Show success modal IMMEDIATELY to prevent redirect
+      console.log('🎯 Setting modal state - orderId:', orderId);
+      setSuccessOrderId(orderId);
+      setShowSuccessModal(true);
+      console.log('✅ Modal state set - showSuccessModal should be true now');
 
       // Show immediate success message
       console.log('🎉 Order placement successful!');
@@ -364,7 +388,7 @@ function CheckoutPageContent() {
       // Send real-time notification
       try {
         console.log('📱 Sending real-time notification...');
-        const notificationResult = await sendOrderPlacedNotification(user.sub, {
+        const notificationResult = await sendOrderPlacedNotification(user.userId, {
           id: orderId,
           total: calculateTotal(),
           trackingNumber: `GW${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
@@ -396,7 +420,7 @@ function CheckoutPageContent() {
           const realEmailResult = await sendRealOrderEmail(
             {
               id: orderId,
-              userId: user.sub,
+              userId: user.userId,
               items: cart.items.map(item => ({
                 ...item,
                 total: item.product.price * item.quantity
@@ -435,7 +459,7 @@ function CheckoutPageContent() {
           const emailResult = await sendOrderConfirmationEmail(
             {
               id: orderId,
-              userId: user.sub,
+              userId: user.userId,
               items: cart.items.map(item => ({
                 ...item,
                 total: item.product.price * item.quantity
@@ -479,17 +503,21 @@ function CheckoutPageContent() {
         toast.success('Order placed successfully!');
       }
       
-      setStep('success');
+      // Ensure modal stays visible by preventing any navigation
+      setLoading(false);
       
-      // Redirect to order success page immediately
-      const customerName = `${shippingAddress.firstName} ${shippingAddress.lastName}`.trim() || user?.displayName || 'Valued Customer';
-      router.push(`/order-success?order=${orderId}&name=${encodeURIComponent(customerName)}`);
     } catch (error) {
       console.error('Error placing order:', error);
       toast.error('Failed to place order. Please try again.');
-    } finally {
       setLoading(false);
     }
+  };
+
+  const processCardPayment = async (orderId: string, amount: number, cardDetails: any) => {
+    // Simulate card payment processing
+    console.log('💳 Processing card payment:', { orderId, amount });
+    // In a real scenario, this would call a payment gateway API
+    return { success: true };
   };
 
   const calculateSubtotal = () => {
@@ -1031,7 +1059,7 @@ function CheckoutPageContent() {
                           <p className="text-sm text-gray-600 dark:text-gray-300">Qty: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-gray-900 dark:text-white">${(item.product.price * item.quantity).toFixed(2)}</p>
+                          <p className="font-medium text-gray-900 dark:text-white">Rs {(item.product.price * item.quantity).toFixed(2)}</p>
                         </div>
                       </div>
                     ))}
@@ -1057,19 +1085,19 @@ function CheckoutPageContent() {
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-700 dark:text-gray-300">Subtotal</span>
-                  <span className="text-gray-900 dark:text-white font-medium">${calculateSubtotal().toFixed(2)}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">Rs {calculateSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-700 dark:text-gray-300">Shipping</span>
-                  <span className="text-gray-900 dark:text-white font-medium">${calculateShipping().toFixed(2)}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">Rs {calculateShipping().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-700 dark:text-gray-300">Tax</span>
-                  <span className="text-gray-900 dark:text-white font-medium">${calculateTax().toFixed(2)}</span>
+                  <span className="text-gray-900 dark:text-white font-medium">Rs {calculateTax().toFixed(2)}</span>
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-3 flex justify-between font-semibold text-lg">
                   <span className="text-gray-900 dark:text-white">Total</span>
-                  <span className="text-gray-900 dark:text-white">${calculateTotal().toFixed(2)}</span>
+                  <span className="text-gray-900 dark:text-white">Rs {calculateTotal().toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1085,6 +1113,15 @@ function CheckoutPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Order Success Modal */}
+      <OrderSuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        orderId={successOrderId}
+        orderTotal={calculateTotal()}
+        customerEmail={user?.email}
+      />
     </div>
   );
 }

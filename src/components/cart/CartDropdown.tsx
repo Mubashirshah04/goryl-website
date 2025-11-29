@@ -8,6 +8,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useSession } from '@/hooks/useCustomSession';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export default function CartDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,22 +33,51 @@ export default function CartDropdown() {
 
   // Initialize cart when component mounts and user is available
   useEffect(() => {
-    if (user?.id && !cart) {
-      initializeCart(user.id);
+    if (user?.id) {
+      // Clean up old cart data with placeholder images
+      const storageKey = `goryl_cart_${user.id}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        try {
+          const cartData = JSON.parse(stored);
+          // Remove items with placeholder images
+          if (cartData.items && Array.isArray(cartData.items)) {
+            cartData.items = cartData.items.filter((item: any) => 
+              item.product?.image && !item.product.image.includes('placeholder')
+            );
+            cartData.itemCount = cartData.items.length;
+            cartData.subtotal = cartData.items.reduce((sum: number, item: any) => 
+              sum + (item.quantity * item.product.price), 0
+            );
+            localStorage.setItem(storageKey, JSON.stringify(cartData));
+          }
+        } catch (e) {
+          console.error('Error cleaning cart data:', e);
+        }
+      }
+      
+      if (!cart) {
+        initializeCart(user.id);
+      }
     }
-  }, [user?.id]); // Remove cart and initializeCart from dependencies to prevent infinite loop
+  }, [user?.id]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        // Check if click is on the cart button itself
+        if (buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
 
   const handleCheckout = () => {
     setIsOpen(false);
@@ -55,7 +85,7 @@ export default function CartDropdown() {
   };
 
   const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
+    return `Rs ${price.toFixed(2)}`;
   };
 
   // Get button position for desktop dropdown
@@ -78,6 +108,7 @@ export default function CartDropdown() {
 
   const dropdownContent = isOpen ? (
     <motion.div
+      ref={dropdownRef}
       initial={{ opacity: 0, y: -10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -147,13 +178,18 @@ export default function CartDropdown() {
                       className="flex items-center space-x-2 md:space-x-3 p-2 md:p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                     >
                       {/* Product Image */}
-                      {item.product?.image && (
-                        <img
-                          src={item.product.image}
-                          alt={item.product.title}
-                          className="w-14 h-14 md:w-12 md:h-12 object-cover rounded-lg flex-shrink-0"
-                        />
-                      )}
+                      <div className="w-14 h-14 md:w-12 md:h-12 rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                        {item.product?.image ? (
+                          <img
+                            src={item.product.image}
+                            alt={item.product.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                      </div>
 
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
@@ -168,7 +204,10 @@ export default function CartDropdown() {
                       {/* Quantity Controls */}
                       <div className="flex items-center space-x-1.5 md:space-x-2 flex-shrink-0">
                         <button
-                          onClick={() => updateQuantity(item.productId, Math.max(0, item.quantity - 1))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateQuantity(item.productId, Math.max(0, item.quantity - 1));
+                          }}
                           className="w-7 h-7 md:w-6 md:h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors touch-manipulation"
                         >
                           <Minus className="w-3.5 h-3.5 md:w-3 md:h-3" />
@@ -179,14 +218,26 @@ export default function CartDropdown() {
                         </span>
                         
                         <button
-                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                          className="w-7 h-7 md:w-6 md:h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors touch-manipulation"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const maxStock = item.product?.stock || 0;
+                            if (item.quantity < maxStock) {
+                              updateQuantity(item.productId, item.quantity + 1);
+                            } else {
+                              toast.error(`Only ${maxStock} in stock`);
+                            }
+                          }}
+                          disabled={item.quantity >= (item.product?.stock || 0)}
+                          className="w-7 h-7 md:w-6 md:h-6 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Plus className="w-3.5 h-3.5 md:w-3 md:h-3" />
                         </button>
 
                         <button
-                          onClick={() => removeFromCart(item.productId)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromCart(item.productId);
+                          }}
                           className="w-7 h-7 md:w-6 md:h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors ml-1 md:ml-2 touch-manipulation"
                         >
                           <Trash2 className="w-3.5 h-3.5 md:w-3 md:h-3 text-red-600 dark:text-red-400" />
@@ -235,7 +286,7 @@ export default function CartDropdown() {
   ) : null;
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative">
       {/* Cart Icon Button */}
       <button
         ref={buttonRef}

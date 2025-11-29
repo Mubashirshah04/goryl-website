@@ -11,6 +11,7 @@ import {
 // Removed toast - using progress bar instead
 import Link from 'next/link';
 import { UploadProgressBar } from '@/components/UploadProgressBar';
+import { uploadImage, uploadVideo } from '@/lib/awsS3Service';
 
 export default function ProductUploadPage() {
   const { data: session, status } = useSession();
@@ -454,39 +455,34 @@ export default function ProductUploadPage() {
     setUploading(true);
     setShowProgressBar(true);
     setUploadStatus('uploading');
-    setUploadProgress(0);
-    setUploadMessage('Preparing upload...');
-    
-    try {
-      // Upload images to AWS S3
-      const { uploadImage, uploadVideo } = await import('@/lib/awsS3Service');
 
-      let imageUrls: string[] = [...formData.images]; // Keep existing images in edit mode
-      
-      const totalSteps = imageFiles.length + (videoFile ? 1 : 0) + 1; // Images + Video + Save to DB
-      let completedSteps = 0;
-      
-      // Upload new images if any
+    try {
+      const imageUrls: string[] = [];
+      let currentProgress = 0;
+      const totalFiles = imageFiles.length + (videoFile ? 1 : 0);
+      const progressPerFile = totalFiles > 0 ? 100 / totalFiles : 100;
+
+      // Upload images
       if (imageFiles.length > 0) {
         for (let i = 0; i < imageFiles.length; i++) {
           const file = imageFiles[i];
           
-          setUploadMessage(`Uploading image ${i + 1}/${imageFiles.length}...`);
+          setUploadMessage(`Uploading image ${i + 1}/${imageFiles.length}`);
           
           const result = await uploadImage(
             file,
             user.sub,
             'products',
             (progress) => {
-              // Calculate overall progress: (completed images * 100 + current image progress) / total steps
-              const imageProgress = ((completedSteps * 100) + progress) / totalSteps;
-              setUploadProgress(Math.min(imageProgress, 100));
+              // Show progress for current file (0-100)
+              const fileProgress = (progress / 100) * progressPerFile;
+              setUploadProgress(Math.min(currentProgress + fileProgress, 100));
             }
           );
           
           imageUrls.push(result.url);
-          completedSteps++;
-          setUploadProgress((completedSteps * 100) / totalSteps);
+          currentProgress += progressPerFile;
+          setUploadProgress(Math.min(currentProgress, 100));
           console.log('✅ Image uploaded to S3:', result.url);
         }
       }
@@ -495,20 +491,20 @@ export default function ProductUploadPage() {
       let videoUrl: string | undefined;
       if (videoFile) {
         try {
-          setUploadMessage('Uploading video...');
+          setUploadMessage('Uploading video');
           const result = await uploadVideo(
             videoFile,
             user.sub,
             'products',
             (progress) => {
-              // Calculate overall progress: (completed steps * 100 + video progress) / total steps
-              const videoProgress = ((completedSteps * 100) + progress) / totalSteps;
-              setUploadProgress(Math.min(videoProgress, 100));
+              // Show progress for video (0-100)
+              const fileProgress = (progress / 100) * progressPerFile;
+              setUploadProgress(Math.min(currentProgress + fileProgress, 100));
             }
           );
           videoUrl = result.url;
-          completedSteps++;
-          setUploadProgress((completedSteps * 100) / totalSteps);
+          currentProgress += progressPerFile;
+          setUploadProgress(Math.min(currentProgress, 100));
           console.log('✅ Video uploaded to S3:', videoUrl);
         } catch (error) {
           console.error('❌ Error uploading video:', error);

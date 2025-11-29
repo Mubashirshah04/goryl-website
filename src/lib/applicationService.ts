@@ -196,10 +196,9 @@ export const getUserApplications = async (userId: string): Promise<Application[]
 
     console.log(`🔍 Fetching applications for user: ${userId}`)
 
-    const command = new QueryCommand({
+    const command = new ScanCommand({
       TableName: APPLICATIONS_TABLE,
-      IndexName: 'userId-index', // You may need to create this GSI
-      KeyConditionExpression: 'userId = :userId',
+      FilterExpression: 'userId = :userId',
       ExpressionAttributeValues: {
         ':userId': userId,
       },
@@ -428,7 +427,7 @@ export const updateUserProfileOnApproval = async (userId: string, businessType: 
     
     const command = new UpdateCommand({
       TableName: USERS_TABLE,
-      Key: { userId: userId },
+      Key: { id: userId },
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,

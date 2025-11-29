@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Download, ShoppingBag, Eye, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 interface OrderSuccessModalProps {
   isOpen: boolean;
@@ -21,15 +22,19 @@ export default function OrderSuccessModal({
   customerEmail 
 }: OrderSuccessModalProps) {
   const router = useRouter();
+  
+  React.useEffect(() => {
+    console.log('🎯 OrderSuccessModal - isOpen:', isOpen, 'orderId:', orderId);
+  }, [isOpen, orderId]);
 
   const handleViewOrder = () => {
     onClose();
-    router.push(`/orders/${orderId}`);
+    router.push('/orders');
   };
 
   const handleContinueShopping = () => {
     onClose();
-    router.push('/explore');
+    router.push('/');
   };
 
   const handleDownloadInvoice = async () => {
@@ -167,7 +172,7 @@ export default function OrderSuccessModal({
                   className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 flex items-center justify-center space-x-2"
                 >
                   <Eye className="w-5 h-5" />
-                  <span>View Order Details</span>
+                  <span>View My Orders</span>
                 </button>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -184,7 +189,7 @@ export default function OrderSuccessModal({
                     className="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white py-2.5 px-4 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center space-x-2"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    <span>Shop More</span>
+                    <span>Home</span>
                   </button>
                 </div>
               </motion.div>

@@ -161,7 +161,7 @@ export default function CartPage() {
                           <Link href={`/product/${item.productId}`} className="hover:opacity-80">
                             <h3 className="font-semibold text-gray-900 truncate">{item.product.title}</h3>
                           </Link>
-                          <p className="text-gray-600 text-sm">${item.product.price}</p>
+                          <p className="text-gray-600 text-sm">Rs {item.product.price}</p>
                           <p className="text-gray-500 text-sm">
                             {item.product.stock > 0 ? `${item.product.stock} in stock` : 'Out of stock'}
                           </p>
@@ -180,8 +180,8 @@ export default function CartPage() {
 
                         {/* Price */}
                         <div className="text-right">
-                          <p className="font-semibold text-gray-900 dark:text-white">${(item.product.price * item.quantity).toFixed(2)}</p>
-                          <p className="text-gray-500 text-sm">${item.product.price} each</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">Rs {(item.product.price * item.quantity).toFixed(2)}</p>
+                          <p className="text-gray-500 text-sm">Rs {item.product.price} each</p>
                         </div>
 
                         {/* Remove Button */}
@@ -207,26 +207,26 @@ export default function CartPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${calculateSubtotal().toFixed(2)}</span>
+                    <span>Rs {calculateSubtotal().toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span>{calculateShipping() === 0 ? 'Free' : `$${calculateShipping().toFixed(2)}`}</span>
+                    <span>{calculateShipping() === 0 ? 'Free' : `Rs ${calculateShipping().toFixed(2)}`}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Tax</span>
-                    <span>${calculateTax().toFixed(2)}</span>
+                    <span>Rs {calculateTax().toFixed(2)}</span>
                   </div>
                   
                   {calculateShipping() === 0 && (<div className="flex items-center space-x-2 text-green-600 text-sm">
                       <Truck className="w-4 h-4"/>
-                      <span>Free shipping on orders over $50</span>
+                      <span>Free shipping on orders over Rs 50</span>
                     </div>)}
                   
                   <div className="border-t border-gray-200 pt-3">
                     <div className="flex justify-between text-lg font-semibold text-gray-900 dark:text-white">
                       <span>Total</span>
-                      <span>${calculateTotal().toFixed(2)}</span>
+                      <span>Rs {calculateTotal().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

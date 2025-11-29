@@ -64,8 +64,8 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter(n => !n.read).length + chatNotifications.length;
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.read) {
-      await markNotificationAsRead(notification.id);
+    if (!notification.read && user?.id) {
+      await markNotificationAsRead(notification.id, user.id);
     }
     setShowDropdown(false);
   };

@@ -6,9 +6,10 @@ import { useSave } from '@/hooks/useSave';
 import { ShareModal } from '@/components/modals/ShareModal';
 import { useState } from 'react';
 import Link from 'next/link';
-import { useAuthStore } from '@/store/authStoreCognito';
+import { useCustomSession } from '@/hooks/useCustomSession';
 import { GamePromptModal } from '@/components/modals/GamePromptModal';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Product {
   id: string;
@@ -19,11 +20,12 @@ interface Product {
   brandColor: string;
   tagline: string;
   likes: number;
+  discount?: number;
 }
 
 export function ProductCard({ product }: { product: Product }) {
-  const { user } = useAuthStore();
-  const userId = user?.sub || '';
+  const { session } = useCustomSession();
+  const userId = session?.userId || '';
   const { isLiked, toggleLike, likeCount } = useLike(product.id, userId);
   const { isSaved, toggleSave } = useSave(product.id, userId);
   const [shareOpen, setShareOpen] = useState(false);
@@ -58,12 +60,17 @@ export function ProductCard({ product }: { product: Product }) {
               alt={product.title}
               className="object-cover w-full h-full"
             />
+            {product.discount && product.discount > 0 && (
+              <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg">
+                {product.discount}% OFF
+              </div>
+            )}
           </div>
         </Link>
         <div className="p-3">
           <Link href={`/product/${product.id}`}>
             <h3 className="font-semibold truncate">{product.title}</h3>
-            <p className="text-black dark:text-white font-bold">${product.price}</p>
+            <p className="text-black dark:text-white font-bold">Rs {product.price}</p>
           </Link>
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center space-x-2">

@@ -49,7 +49,7 @@ import { createConversionRequest, canUserRequestConversion, getUserConversionReq
 
 export default function BrandDashboard() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuthStore(); // ✅ Get auth loading state
+  const { user } = useAuthStore();
   const { profile, fetchProfile } = useUserProfileStore();
   const { products, fetchUserProducts } = useUserProductsStore();
   const { reels, fetchUserReels, fetchUserReelsRealtime, deleteReel } = useUserReelsStore();
@@ -83,12 +83,6 @@ export default function BrandDashboard() {
 
   // Check if user is authorized (brand/company/seller)
   useEffect(() => {
-    // ✅ Wait for auth check to complete before redirecting
-    if (authLoading) {
-      console.log('⏳ Waiting for auth check...');
-      return;
-    }
-    
     if (!user) {
       console.log('❌ No user found, redirecting to login');
       router.push('/login');
@@ -184,7 +178,7 @@ export default function BrandDashboard() {
       if (unsubscribeOrders) unsubscribeOrders();
       if (unsubscribePayments) unsubscribePayments();
     };
-  }, [user?.sub, authLoading]); // ✅ Added authLoading dependency
+  }, [user?.sub]);
 
   // Handle order status update
   const handleOrderStatusUpdate = async (orderId: string, newStatus: string) => {
@@ -416,13 +410,13 @@ export default function BrandDashboard() {
     }
   };
 
-  // ✅ Show loading screen while auth is checking
-  if (authLoading || loading) {
+  // ✅ Show loading screen while dashboard is loading
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">{authLoading ? 'Checking authentication...' : 'Loading dashboard...'}</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading dashboard...</p>
         </div>
       </div>
     );

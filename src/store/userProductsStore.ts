@@ -83,22 +83,13 @@ export const useUserProductsStore = create<UserProductsStore>((set, get) => ({
       return () => { };
     }
 
-    // ✅ AWS DynamoDB doesn't support realtime listeners
-    // Using polling approach instead
-    console.log('🔄 Setting up polling for products (AWS DynamoDB)');
-
-    // Initial fetch
+    // ✅ Fetch products once on mount - no polling
+    console.log('📦 Fetching products for user:', userId);
     get().fetchUserProducts(userId);
 
-    // Poll every 10 seconds for updates
-    const intervalId = setInterval(() => {
-      get().fetchUserProducts(userId);
-    }, 10000);
-
-    // Return cleanup function
+    // Return cleanup function (no-op since we're not polling)
     return () => {
-      clearInterval(intervalId);
-      console.log('🛑 Stopped polling for products');
+      console.log('🛑 Cleaned up products subscription');
     };
   },
 

@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// ✅ AWS DYNAMODB - Firestore removed
-// ✅ AWS - Using AWS services
-import { useAuthStore } from '@/store/authStoreCognito';
+// ✅ AWS DYNAMODB - Using AWS services
+import { useCustomSession } from '@/hooks/useCustomSession';
 import { Package, Clock, CheckCircle, XCircle, Truck, Star, Download, MessageCircle, RefreshCw, Phone, Mail, Eye, X, MapPin, Calendar, CreditCard, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cancelOrder, initiateReturn, submitReview, generateInvoice } from '@/lib/orderManagementService';
+import { toast } from 'react-hot-toast';
 
 interface Order {
   id: string;
@@ -37,7 +36,7 @@ const statusConfig = {
 };
 
 export default function OrdersPage() {
-  const { user } = useAuthStore();
+  const { session: user } = useCustomSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'>('all');
@@ -51,39 +50,35 @@ export default function OrdersPage() {
       return;
     }
 
-    console.log('🔍 Loading orders for user:', user.sub);
+    console.log('🔍 Loading orders for user:', user.userId);
 
-    // Use single query with userId (primary field)
-    const q = query(
-      collection(db, 'orders'),
-      where('userId', '==', user.sub),
-      orderBy('createdAt', 'desc')
-    );
+    // Fetch orders from AWS API
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch(`/api/orders?userId=${user.userId}`);
+        if (!response.ok) throw new Error('Failed to fetch orders');
+        
+        const data = await response.json();
+        console.log('📦 Orders found:', data.length);
+        
+        const ordersData = data.map((order: any) => ({
+          ...order,
+          createdAt: typeof order.createdAt === 'string' ? new Date(order.createdAt) : order.createdAt,
+          updatedAt: typeof order.updatedAt === 'string' ? new Date(order.updatedAt) : order.updatedAt
+        })) as Order[];
+        
+        console.log('📋 Orders loaded successfully:', ordersData.length);
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('❌ Error loading orders:', error);
+        toast.error('Failed to load orders');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log('📦 Orders found:', snapshot.docs.length);
-      
-      const ordersData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          // Ensure createdAt is properly handled
-          createdAt: data.createdAt?.toDate ? data.createdAt : new Date(data.createdAt),
-          updatedAt: data.updatedAt?.toDate ? data.updatedAt : new Date(data.updatedAt)
-        };
-      }) as Order[];
-      
-      console.log('📋 Orders loaded successfully:', ordersData.length);
-      setOrders(ordersData);
-      setLoading(false);
-    }, (error) => {
-      console.error('❌ Error loading orders:', error);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user?.sub]);
+    fetchOrders();
+  }, [user?.userId]);
 
   const filteredOrders = activeTab === 'all' 
     ? orders 
@@ -131,8 +126,8 @@ export default function OrdersPage() {
 🚚 ORDER TRACKING DETAILS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 📦 Order ID: #${order.id.slice(-8).toUpperCase()}
-📅 Order Date: ${new Date(order.createdAt.toDate()).toLocaleDateString()}
-💰 Order Total: $${(order.totalAmount || order.total || 0).toFixed(2)}
+📅 Order Date: ${new Date(order.createdAt).toLocaleDateString()}
+💰 Order Total: Rs ${(order.totalAmount || order.total || 0).toFixed(2)}
 🏷️ Tracking Number: ${order.trackingNumber || `GW${Date.now().toString().slice(-8)}`}
 
 📍 CURRENT STATUS: ${order.status.toUpperCase().replace('_', ' ')}
@@ -346,8 +341,8 @@ ${statusMessages[order.status] || 'Status update in progress...'}
 📞 CUSTOMER SUPPORT
 ━━━━━━━━━━━━━━━━━━
 📋 Order ID: #${orderId.slice(-8).toUpperCase()}
-📅 Order Date: ${order?.createdAt ? new Date(order.createdAt.toDate()).toLocaleDateString() : 'N/A'}
-💰 Order Total: $${(order?.totalAmount || order?.total || 0).toFixed(2)}
+📅 Order Date: ${order?.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+💰 Order Total: Rs ${(order?.totalAmount || order?.total || 0).toFixed(2)}
 
 📞 Phone: +1-800-GORYL-HELP
 📧 Email: support@goryl.com
@@ -458,7 +453,7 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                         </div>
                       </div>
                       <p className="text-gray-600 text-sm">
-                        Placed on {new Date(order.createdAt.toDate()).toLocaleDateString('en-US', {
+                        Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -467,8 +462,8 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                     </div>
                     
                     <div className="text-right">
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        ${(order.totalAmount || order.total || 0).toFixed(2)}
+                      <p className="text-lg font-semibold text-gray-900">
+                        Rs {(order.totalAmount || order.total || 0).toFixed(2)}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-300">
                         {order.paymentMethod === 'card' ? 'Card' : 
@@ -506,13 +501,13 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                             </p>
                             {item.product?.price && (
                               <p className="text-gray-500 dark:text-gray-500 text-xs">
-                                ${item.product.price.toFixed(2)} each
+                                Rs {item.product.price.toFixed(2)} each
                               </p>
                             )}
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-gray-900 dark:text-white">
-                              ${((item.product?.price || item.price || 0) * item.quantity).toFixed(2)}
+                              Rs {((item.product?.price || item.price || 0) * item.quantity).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -633,7 +628,7 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                           <div key={eventIndex} className="flex items-center text-sm">
                             <div className="w-2 h-2 bg-purple-600 rounded-full mr-3"></div>
                             <span className="text-gray-600 dark:text-gray-400">
-                              {event.message} - {new Date(event.timestamp.toDate()).toLocaleString()}
+                              {event.message} - {new Date(event.timestamp).toLocaleString()}
                             </span>
                           </div>
                         ))}
@@ -687,7 +682,7 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                     <div>
                       <p className="text-gray-600 dark:text-gray-400">Order Date</p>
                       <p className="font-medium text-gray-900 dark:text-white">
-                        {new Date(selectedOrder.createdAt.toDate()).toLocaleDateString('en-US', {
+                        {new Date(selectedOrder.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -830,7 +825,7 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                         <div className="flex-1">
                           <p className="font-medium text-gray-900 dark:text-white">{event.message}</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {new Date(event.timestamp.toDate()).toLocaleString()}
+                            {new Date(event.timestamp).toLocaleString()}
                           </p>
                         </div>
                       </div>

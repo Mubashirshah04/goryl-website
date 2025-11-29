@@ -1,0 +1,43 @@
+version: 1
+
+# Frontend configuration for Amplify Hosting with Next.js
+frontend:
+  phases:
+    # No build phase - we upload pre-built standalone
+    build:
+      commands:
+        - echo "Build already completed locally"
+  artifacts:
+    baseDirectory: .next/standalone
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - 'node_modules/**/*'
+
+# Backend configuration
+backend:
+  output: amplify_outputs.json
+  lint:
+    enabled: true
+  auth:
+    duration: 1h
+    login_mechanisms:
+      - email
+      - phone_number
+  api:
+    graphql:
+      auth:
+        - allow: public
+        - allow: private
+          provider: userPool
+  data:
+    mysql: false
+    postgres: false
+  storage:
+    aws_region: ap-south-1
+    bucket_name: goryl-storage
+    cors:
+      - origin: "*"
+        methods: [GET, PUT, POST, DELETE]
+        headers: [Authorization]

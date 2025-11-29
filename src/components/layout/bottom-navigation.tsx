@@ -260,21 +260,21 @@ export default function BottomNav() {
                   <button
                     onClick={() => handleUploadClick({ href, icon: Icon, label, isUpload })}
                     data-upload-button="true"
-                    className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-premium-coral hover-scale ripple-effect ${showUploadOptions
-                      ? 'bg-gradient-to-br from-[#FF6868] to-[#A29BFE] scale-110 animate-pulse-glow'
-                      : 'bg-gradient-to-br from-[#FF6868] to-[#A29BFE] hover:shadow-premium-purple'
+                    className={`relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${showUploadOptions
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 scale-110 shadow-xl'
+                      : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:shadow-2xl hover:scale-105'
                       }`}
                   >
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/20 to-transparent"></div>
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent"></div>
                     <Icon
                       size={24}
-                      className="text-white"
+                      className="text-white relative z-10"
                       style={{
-                        transform: showUploadOptions ? 'rotate(45deg)' : 'rotate(0deg)'
+                        transform: showUploadOptions ? 'rotate(45deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
                       }}
                     />
                   </button>
-                  {/* No text label for upload button */}
 
                   {/* Upload Options Popup */}
                   {showUploadOptions && (

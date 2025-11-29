@@ -65,7 +65,7 @@ export const addToCart = async (userId: string, product: Product, quantity: numb
         product: {
           id: product.id || '',
           title: product.title || 'Untitled',
-          image: product.images?.[0] || '/placeholder.jpg',
+          image: product.images?.[0] || '',
           price: product.price || 0,
           stock: product.stock || 0,
           sellerId: product.sellerId || '',

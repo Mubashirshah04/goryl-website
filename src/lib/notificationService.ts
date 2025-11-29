@@ -26,20 +26,52 @@ export const sendOrderStatusNotification = async (userId: string, orderId: strin
 }
 
 export const subscribeToUserNotifications = (userId: string, callback: (notifications: any[]) => void) => {
-  console.warn('⚠️ subscribeToUserNotifications: AWS implementation pending');
+  console.log('🔔 Subscribing to notifications for user:', userId);
   
-  // Call callback once with empty array, not repeatedly
-  setTimeout(() => callback([]), 0);
-  
+  // Fetch initial notifications
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(`/api/notifications?userId=${userId}`);
+      if (response.ok) {
+        const notifications = await response.json();
+        console.log('✅ Notifications fetched:', notifications.length);
+        callback(notifications);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching notifications:', error);
+      callback([]);
+    }
+  };
+
+  // Fetch immediately
+  fetchNotifications();
+
+  // Poll for new notifications every 5 seconds
+  const interval = setInterval(fetchNotifications, 5000);
+
   // Return cleanup function
   return () => {
-    // Cleanup logic here when implemented
+    clearInterval(interval);
   };
 }
 
-export const markNotificationAsRead = async (notificationId: string) => {
-  console.warn('⚠️ markNotificationAsRead: AWS implementation pending');
-  return { success: true };
+export const markNotificationAsRead = async (notificationId: string, userId: string) => {
+  try {
+    console.log('📝 Marking notification as read:', notificationId, 'for user:', userId);
+    const response = await fetch('/api/notifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notificationId, userId, read: true }),
+    });
+    
+    if (response.ok) {
+      console.log('✅ Notification marked as read');
+      return { success: true };
+    }
+  } catch (error) {
+    console.error('❌ Error marking notification as read:', error);
+  }
+  return { success: false };
 }
 
 export const markAllNotificationsAsRead = async (userId: string) => {

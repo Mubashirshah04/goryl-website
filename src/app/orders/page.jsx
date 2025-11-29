@@ -89,7 +89,7 @@ export default function OrdersPage() {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 📦 Order ID: #${order.id.slice(-8).toUpperCase()}
 📅 Order Date: ${new Date(order.createdAt.toDate()).toLocaleDateString()}
-💰 Order Total: $${(order.totalAmount || order.total || 0).toFixed(2)}
+💰 Order Total: Rs ${(order.totalAmount || order.total || 0).toFixed(2)}
 🏷️ Tracking Number: ${order.trackingNumber || `GW${Date.now().toString().slice(-8)}`}
 
 📍 CURRENT STATUS: ${order.status.toUpperCase().replace('_', ' ')}
@@ -294,7 +294,7 @@ ${statusMessages[order.status] || 'Status update in progress...'}
 ━━━━━━━━━━━━━━━━━━
 📋 Order ID: #${orderId.slice(-8).toUpperCase()}
 📅 Order Date: ${(order === null || order === void 0 ? void 0 : order.createdAt) ? new Date(order.createdAt.toDate()).toLocaleDateString() : 'N/A'}
-💰 Order Total: $${((order === null || order === void 0 ? void 0 : order.totalAmount) || (order === null || order === void 0 ? void 0 : order.total) || 0).toFixed(2)}
+💰 Order Total: Rs ${((order === null || order === void 0 ? void 0 : order.totalAmount) || (order === null || order === void 0 ? void 0 : order.total) || 0).toFixed(2)}
 
 📞 Phone: +1-800-GORYL-HELP
 📧 Email: support@goryl.com
@@ -388,7 +388,7 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                     
                     <div className="text-right">
                       <p className="text-lg font-semibold text-gray-900">
-                        ${(order.totalAmount || order.total || 0).toFixed(2)}
+                        Rs {(order.totalAmount || order.total || 0).toFixed(2)}
                       </p>
                       <p className="text-sm text-gray-600">
                         {order.paymentMethod === 'card' ? 'Card' :
@@ -419,12 +419,12 @@ ${statusMessages[order.status] || 'Status update in progress...'}
                               Quantity: {item.quantity}
                             </p>
                             {((_d = item.product) === null || _d === void 0 ? void 0 : _d.price) && (<p className="text-gray-500 dark:text-gray-500 text-xs">
-                                ${item.product.price.toFixed(2)} each
+                                Rs {item.product.price.toFixed(2)} each
                               </p>)}
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-gray-900 dark:text-white">
-                              ${((((_e = item.product) === null || _e === void 0 ? void 0 : _e.price) || item.price || 0) * item.quantity).toFixed(2)}
+                              Rs {((((_e = item.product) === null || _e === void 0 ? void 0 : _e.price) || item.price || 0) * item.quantity).toFixed(2)}
                             </p>
                           </div>
                         </div>);

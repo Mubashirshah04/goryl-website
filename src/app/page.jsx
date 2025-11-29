@@ -93,7 +93,14 @@ function CommentModal({ isOpen, onClose, productId }) {
       </motion.div>
     </div>);
 }
+// Temporarily redirect to new home design
+import HomeNew from './home-new';
+
 export default function HomePage() {
+  return <HomeNew />;
+}
+
+function OldHomePage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [commentModalOpen, setCommentModalOpen] = useState(false);

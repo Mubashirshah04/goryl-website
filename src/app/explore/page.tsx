@@ -16,6 +16,7 @@ import {
   Package
 } from 'lucide-react';
 import { toggleProductLike, Product as FirebaseProduct } from '@/lib/productService';
+import { getPersonalizedFeed, trackProductInteraction, updateUserPreferences } from '@/lib/youtubeAlgorithm';
 // Removed Firebase imports - now using AWS DynamoDB for both products and reels
 
 interface Product extends FirebaseProduct {
@@ -30,21 +31,13 @@ interface Product extends FirebaseProduct {
 
 type ExploreItem = Product;
 
-// Shuffle array function (Fisher-Yates algorithm)
-const shuffleArray = <T,>(array: T[]): T[] => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
 export default function ExplorePage() {
   const [items, setItems] = useState<ExploreItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Persistent state management - DISABLED to force fresh AWS data
   useEffect(() => {
@@ -81,63 +74,65 @@ export default function ExplorePage() {
   }, [user]);
 
   useEffect(() => {
-    // CLEAR OLD FIREBASE CACHE - Force fresh AWS data
-    console.log('🔄 Explore: Clearing old cache and loading fresh AWS data');
-    localStorage.removeItem('cached_products');
-    sessionStorage.removeItem('explore_items');
+    // ✅ REAL-TIME AWS LOAD + YOUTUBE ALGORITHM - Load once, refresh on engagement
+    console.log('🔄 Explore: Loading active products with YouTube algorithm');
     
     setLoading(true);
-    setItems([]); // Start with empty to force fresh load
+    let isFirstLoad = true;
     
     // Use AWS DynamoDB for products instead of Firebase
     const fetchProducts = async () => {
       try {
-        // ✅ Use hybridProductService which handles client/server automatically
-        const { getProducts } = await import('@/lib/hybridProductService');
-        const awsProducts = await getProducts(
-          { status: 'active' }, // Only active products
-          'createdAt',
-          'desc',
-          8 // Limit for fast loading
-    );
+        // ✅ Use optimizedProductService for active products
+        const { getOptimizedProducts } = await import('@/lib/optimizedProductService');
+        const allProducts = await getOptimizedProducts();
     
-        console.log('🛍️ Explore: Received AWS products:', awsProducts.length);
+        console.log('🛍️ Explore: Received AWS products:', allProducts.length);
       
-        if (awsProducts.length === 0) {
-        console.log('🛍️ Explore: No products found');
-        return;
-      }
+        if (allProducts.length === 0) {
+          console.log('🛍️ Explore: No products found');
+          if (isFirstLoad) setLoading(false);
+          return;
+        }
       
-        const productsWithType = awsProducts.map(p => ({ 
+        // ✅ Apply YouTube algorithm for personalization
+        const personalizedProducts = getPersonalizedFeed(allProducts as any, 12, false);
+        
+        const productsWithType = personalizedProducts.map((p: any) => ({ 
           ...p, 
-          type: 'product' as const,
-          createdAt: p.createdAt ? new Date(p.createdAt) : new Date(),
-          updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date()
-      }));
+          type: 'product' as const
+        }));
+        
         // Cache AWS data with version marker
-        localStorage.setItem('cached_products', JSON.stringify({ 
+        sessionStorage.setItem('explore_items', JSON.stringify({ 
           version: 'aws-v1',
-          data: awsProducts,
+          data: productsWithType,
           timestamp: Date.now()
         }));
 
-        // Set products
-        setItems(productsWithType);
+        // Set products and stop loading
+        setItems(productsWithType as any);
+        if (isFirstLoad) {
+          setLoading(false);
+          isFirstLoad = false;
+        }
       } catch (error) {
         console.error('Error fetching products from AWS:', error);
+        if (isFirstLoad) setLoading(false);
       }
     };
     
     // Fetch products immediately
     fetchProducts();
     
-    // Poll every 1.5 seconds for REAL-TIME feel (like YouTube/TikTok)
-    const productsPollInterval = setInterval(fetchProducts, 1500);
+    // ✅ Real-time refresh every 15 seconds (like YouTube)
+    // Shows new products gradually as they're added
+    const productsPollInterval = setInterval(fetchProducts, 15000);
     
     return () => {
       clearInterval(productsPollInterval);
     };
-  }, [searchQuery]);
+  }, []);
 
   const handleLike = async (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
@@ -149,6 +144,10 @@ export default function ExplorePage() {
     }
 
     try {
+      // ✅ Track interaction for YouTube algorithm
+      trackProductInteraction(product.id!, 'like');
+      updateUserPreferences(product as any, 'like');
+      
       await toggleProductLike(product.id!, user.sub);
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -167,6 +166,10 @@ export default function ExplorePage() {
     const isSaved = isInWishlist(product.id!);
     
     try {
+      // ✅ Track interaction for YouTube algorithm
+      trackProductInteraction(product.id!, 'save');
+      updateUserPreferences(product as any, 'save');
+      
       if (isSaved) {
         await removeFromWishlist(product.id!);
         toast.success('Removed from saved');
@@ -179,6 +182,33 @@ export default function ExplorePage() {
     }
   };
 
+
+  // Generate suggestions based on search query
+  useEffect(() => {
+    if (searchQuery.trim().length > 0) {
+      const query = searchQuery.toLowerCase();
+      const uniqueSuggestions = new Set<string>();
+      
+      // Extract keywords from items
+      items.forEach(item => {
+        if (item.title?.toLowerCase().includes(query)) {
+          uniqueSuggestions.add(item.title);
+        }
+        if (item.description?.toLowerCase().includes(query)) {
+          // Extract first few words from description
+          const words = item.description.split(' ').slice(0, 3).join(' ');
+          if (words) uniqueSuggestions.add(words);
+        }
+      });
+      
+      // Convert to array and limit to 5 suggestions
+      setSuggestions(Array.from(uniqueSuggestions).slice(0, 5));
+      setShowSuggestions(true);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [searchQuery, items]);
 
   const filteredItems = items.filter(item => {
       return item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -221,8 +251,28 @@ export default function ExplorePage() {
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => searchQuery.trim().length > 0 && setShowSuggestions(true)}
               className="relative w-full pl-14 pr-5 py-3.5 glass rounded-2xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#FF6868]/50 text-sm placeholder-gray-400 transition-all duration-300 hover:shadow-premium group-hover:border-[#FF6868]/30"
             />
+            
+            {/* Search Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl border border-white/20 shadow-lg z-50 overflow-hidden">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSearchQuery(suggestion);
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full text-left px-5 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-gray-900 dark:text-gray-100 flex items-center space-x-2"
+                  >
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <span>{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

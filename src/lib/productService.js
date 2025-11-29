@@ -145,50 +145,42 @@ export const createProduct = async (productData) => {
   }
 };
 
-// Update product
+// Update product - use API route instead of direct DynamoDB access
 export const updateProduct = async (productId, updates) => {
   try {
-    const updateDate = new Date().toISOString();
-    const params = {
-      TableName: process.env.NEXT_PUBLIC_AWS_PRODUCTS_TABLE,
-      Key: { id: productId },
-      UpdateExpression: 'set updatedAt = :updatedAt',
-      ExpressionAttributeValues: {
-        ':updatedAt': updateDate
-      },
-      ReturnValues: 'ALL_NEW'
-    };
-
-    // Add update fields
-    Object.entries(updates).forEach(([key, value], index) => {
-      params.UpdateExpression += `, #field${index} = :value${index}`;
-      params.ExpressionAttributeNames = {
-        ...params.ExpressionAttributeNames,
-        [`#field${index}`]: key
-      };
-      params.ExpressionAttributeValues[`:value${index}`] = value;
+    const response = await fetch(`/api/products/${productId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
     });
 
-    const { Attributes } = await docClient.send(new UpdateCommand(params));
-    if (Attributes) {
-      setCache(`product:${productId}`, Attributes);
+    if (!response.ok) {
+      throw new Error(`Failed to update product: ${response.statusText}`);
     }
-    return Attributes;
+
+    const data = await response.json();
+    if (data.data) {
+      setCache(`product:${productId}`, data.data);
+    }
+    return data.data;
   } catch (error) {
     console.error('Error updating product:', error);
     throw error;
   }
 };
 
-// Delete product
+// Delete product - use API route instead of direct DynamoDB access
 export const deleteProduct = async (productId) => {
   try {
-    const params = {
-      TableName: process.env.NEXT_PUBLIC_AWS_PRODUCTS_TABLE,
-      Key: { id: productId }
-    };
+    const response = await fetch(`/api/products/${productId}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-    await docClient.send(new DeleteCommand(params));
+    if (!response.ok) {
+      throw new Error(`Failed to delete product: ${response.statusText}`);
+    }
+
     cache.delete(`product:${productId}`);
     return true;
   } catch (error) {

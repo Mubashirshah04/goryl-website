@@ -10,13 +10,17 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const category = searchParams.get('category') || undefined;
     const sellerId = searchParams.get('sellerId') || undefined;
-    const status = (searchParams.get('status') || 'active') as 'active' | 'inactive' | 'draft';
+    const statusParam = searchParams.get('status');
+    // If status is 'all', don't filter by status (admin wants all products)
+    const status = (statusParam && statusParam !== 'all') ? (statusParam as 'active' | 'inactive' | 'draft') : undefined;
     const orderByField = searchParams.get('orderByField') || searchParams.get('orderBy') || 'createdAt';
     const orderDirection = (searchParams.get('orderDirection') || 'desc') as 'asc' | 'desc';
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const limit = parseInt(searchParams.get('limit') || '10000', 10); // Unlimited for admin
     const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined;
     const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined;
     const search = searchParams.get('search') || undefined;
+
+    console.log('📋 API: Fetching products with filters:', { category, sellerId, status, statusParam });
 
     const products = await getProducts(
       {
@@ -31,6 +35,8 @@ export async function GET(request: NextRequest) {
       orderDirection,
       limit
     );
+
+    console.log('✅ API: Returned', products.length, 'products');
 
     // Even if DynamoDB failed, return success with empty array
     // This prevents 500 errors from breaking the app

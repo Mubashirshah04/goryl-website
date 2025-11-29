@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -43,8 +42,7 @@ import { useGlobalProfileStore } from '@/store/globalProfileStore';
 import { clearBlobUrls } from '@/utils/clearBlobUrls';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStoreCognito';
-// ✅ AWS DYNAMODB - Firestore removed, using AWS services
-import { db } from '@/lib/firebase';
+// ✅ AWS DYNAMODB ONLY - Firestore completely removed
 import dynamic from 'next/dynamic';
 
 const PublicContentTabs = dynamic(() => import('@/components/profiles/PublicContentTabs'), {
@@ -87,6 +85,7 @@ export default function BrandProfile({
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [activeTab, setActiveTab] = useState<'products' | 'liked' | 'saved'>('products');
 
   // Local follow state for instant updates - initialize with database check
   const [localIsFollowing, setLocalIsFollowing] = useState(() => {
@@ -130,52 +129,50 @@ export default function BrandProfile({
     checkFollowStatus();
   }, [user?.sub, profile.id, profile.followers, isOwnProfile]);
 
-  // Instant follow/unfollow function
+  // Instant follow/unfollow function - AWS DynamoDB
   const handleInstantFollow = async () => {
-    if (!user || isOwnProfile) return;
+    if (!user) {
+      toast.error('Please login to follow');
+      return;
+    }
+
+    if (isOwnProfile) {
+      toast.info('You cannot follow your own profile');
+      return;
+    }
 
     try {
-      const userRef = doc(db, "users", user.sub);
-      const targetRef = doc(db, "users", profile.id);
+      const newFollowingState = !localIsFollowing;
+      
+      // Update local state immediately - INSTANT
+      setLocalIsFollowing(newFollowingState);
+      setLocalFollowersCount(prev => newFollowingState ? prev + 1 : Math.max(0, prev - 1));
 
-      if (localIsFollowing) {
-        // Update local state immediately - INSTANT
-        setLocalIsFollowing(false);
-        setLocalFollowersCount(prev => Math.max(0, prev - 1));
+      // Update AWS DynamoDB in background
+      const response = await fetch(`/api/user/follow`, {
+        method: newFollowingState ? 'POST' : 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.sub,
+          targetUserId: profile.id
+        })
+      });
 
-        // Update database in background
-        updateDoc(userRef, {
-          following: (user.following || []).filter((id: string) => id !== profile.id),
-        });
-
-        updateDoc(targetRef, {
-          followers: (profile.followers || []).filter((id: string) => id !== user.sub),
-        });
-
-        // Notify parent component
-        if (onFollow) onFollow();
-      } else {
-        // Update local state immediately - INSTANT
-        setLocalIsFollowing(true);
-        setLocalFollowersCount(prev => prev + 1);
-
-        // Update database in background
-        updateDoc(userRef, {
-          following: [...(user.following || []), profile.id],
-        });
-
-        updateDoc(targetRef, {
-          followers: [...(profile.followers || []), user.sub],
-        });
-
-        // Notify parent component
-        if (onFollow) onFollow();
+      if (!response.ok) {
+        throw new Error('Failed to update follow status');
       }
+
+      // Show success message
+      toast.success(newFollowingState ? 'Following!' : 'Unfollowed');
+
+      // Notify parent component
+      if (onFollow) onFollow();
     } catch (error) {
       console.error("Error updating follow status:", error);
       // Revert local state on error
-      setLocalIsFollowing(isFollowing);
-      setLocalFollowersCount(profile.followersCount || 0);
+      setLocalIsFollowing(!localIsFollowing);
+      setLocalFollowersCount(profile.followers?.length || 0);
+      toast.error('Failed to update follow status');
     }
   };
 
@@ -471,39 +468,56 @@ export default function BrandProfile({
       input.style.display = 'none';
       document.body.appendChild(input);
 
-      input.onchange = (e) => {
+      input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
           // Validate file type
           if (!file.type.startsWith('image/')) {
-            console.error('Please select a valid image file');
+            toast.error('Please select a valid image file');
             return;
           }
 
           // Validate file size (max 5MB)
           if (file.size > 5 * 1024 * 1024) {
-            console.error('Image size should be less than 5MB');
+            toast.error('Image size must be less than 5MB');
             return;
           }
 
-          // Compress image before storing to avoid localStorage quota issues
-          compressImage(file, 100).then((compressedDataURL) => {
-            console.log('Compressed profile picture:', compressedDataURL.substring(0, 50) + '...');
-
-            setLogoUrl(compressedDataURL);
-            // Only update global store if this is the user's own profile
-            if (isOwnProfile) {
-              updateProfilePicture(compressedDataURL);
+          try {
+            // Get user ID from profile (since we're on own profile)
+            const userId = profile?.id;
+            if (!userId) {
+              toast.error('User ID not found');
+              return;
             }
-
-            // Update the profile object so changes are visible to everyone
-            profile.profilePic = compressedDataURL;
-          }).catch((error) => {
-            console.error('Failed to compress image:', error);
-            toast.error('Failed to process image');
-          });
-
-          console.log('Profile picture selected:', file);
+            
+            // Upload to AWS S3
+            const { uploadFile } = await import('@/lib/firebaseStorage');
+            const result = await uploadFile(file, `profile-images/${userId}/${file.name}`);
+            
+            console.log('✅ Profile picture uploaded to S3:', result.url);
+            
+            // Automatically save to database
+            const { updateUserProfile } = await import('@/lib/awsUserService');
+            await updateUserProfile(userId, {
+              photoURL: result.url,
+              customPhotoURL: result.url
+            });
+            
+            console.log('✅ Profile picture saved to database');
+            
+            // Update UI
+            setLogoUrl(result.url);
+            if (isOwnProfile) {
+              updateProfilePicture(result.url);
+            }
+            profile.profilePic = result.url;
+            
+            toast.success('Profile picture updated successfully!');
+          } catch (uploadError) {
+            console.error('Upload failed:', uploadError);
+            toast.error('Failed to upload profile picture');
+          }
         }
         // Clean up
         document.body.removeChild(input);
@@ -525,39 +539,56 @@ export default function BrandProfile({
       input.style.display = 'none';
       document.body.appendChild(input);
 
-      input.onchange = (e) => {
+      input.onchange = async (e) => {
         const file = (e.target as HTMLInputElement).files?.[0];
         if (file) {
           // Validate file type
           if (!file.type.startsWith('image/')) {
-            console.error('Please select a valid image file');
+            toast.error('Please select a valid image file');
             return;
           }
 
           // Validate file size (max 5MB)
           if (file.size > 5 * 1024 * 1024) {
-            console.error('Image size should be less than 5MB');
+            toast.error('Image size must be less than 5MB');
             return;
           }
 
-          // Compress image before storing to avoid localStorage quota issues
-          compressImage(file, 100).then((compressedDataURL) => {
-            console.log('Compressed banner image:', compressedDataURL.substring(0, 50) + '...');
-
-            setBannerUrl(compressedDataURL);
-            // Only update global store if this is the user's own profile
-            if (isOwnProfile) {
-              updateBannerImage(compressedDataURL);
+          try {
+            // Get user ID from profile (since we're on own profile)
+            const userId = profile?.id;
+            if (!userId) {
+              toast.error('User ID not found');
+              return;
             }
-
-            // Update the profile object so changes are visible to everyone
-            profile.coverPhoto = compressedDataURL;
-          }).catch((error) => {
-            console.error('Failed to compress image:', error);
-            toast.error('Failed to process image');
-          });
-
-          console.log('Banner selected:', file);
+            
+            // Upload to AWS S3
+            const { uploadFile } = await import('@/lib/firebaseStorage');
+            const result = await uploadFile(file, `banner-images/${userId}/${file.name}`);
+            
+            console.log('✅ Banner image uploaded to S3:', result.url);
+            
+            // Automatically save to database
+            const { updateUserProfile } = await import('@/lib/awsUserService');
+            await updateUserProfile(userId, {
+              bannerImage: result.url,
+              coverPhoto: result.url
+            });
+            
+            console.log('✅ Banner image saved to database');
+            
+            // Update UI
+            setBannerUrl(result.url);
+            if (isOwnProfile) {
+              updateBannerImage(result.url);
+            }
+            profile.coverPhoto = result.url;
+            
+            toast.success('Banner image updated successfully!');
+          } catch (uploadError) {
+            console.error('Upload failed:', uploadError);
+            toast.error('Failed to upload banner image');
+          }
         }
         // Clean up
         document.body.removeChild(input);
@@ -574,12 +605,11 @@ export default function BrandProfile({
       {/* Cover Photo */}
       <div className="relative h-48 w-full bg-gradient-to-r from-blue-400 to-purple-500">
         {bannerImage || bannerUrl ? (
-          <Image
+          <img
             src={bannerImage || bannerUrl}
             alt="Cover Photo"
-            fill
-            className="object-cover"
-            onError={(e) => {
+            className="w-full h-full object-cover"
+            onError={(e: any) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
             }}
@@ -627,11 +657,10 @@ export default function BrandProfile({
                 });
 
                 return imageSrc ? (
-                  <Image
+                  <img
                     src={imageSrc}
                     alt="Profile Picture"
-                    fill
-                    className="object-cover"
+                    className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       console.error('Image load error for:', imageSrc);
@@ -857,7 +886,7 @@ export default function BrandProfile({
               <span className="text-xs text-center text-foreground">Shop</span>
             </Link>
             <Link
-              href={`/products/${profile.id}`}
+              href={`/shop/${profile.id}`}
               className="flex flex-col items-center justify-center p-3 bg-accent rounded-lg hover:bg-accent/80 transition"
             >
               <Package className="w-5 h-5 text-green-600 mb-1" />
@@ -1007,37 +1036,46 @@ export default function BrandProfile({
         </div>
       </div>
 
-      {/* Most Loved Products */}
+      {/* Most Selling Products */}
       <div className="px-4 mt-8">
-        <h2 className="text-lg font-semibold mb-3 text-foreground">Most Loved Products</h2>
+        <h2 className="text-lg font-semibold mb-3 text-foreground">Most Selling Products</h2>
         {productsLoading ? (
           <p className="text-muted-foreground">Loading products...</p>
-        ) : products.length > 0 ? (
+        ) : products.filter((p: UserProduct) => (p.sold || 0) > 0).length > 0 ? (
           <div className="grid grid-cols-2 gap-4">
-            {products.slice(0, 4).map((product: UserProduct) => (
-              <div
-                key={product.id}
-                className="bg-accent p-3 rounded-lg flex flex-col items-center"
-              >
-                <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted">
-                  <Image
-                    src={product.images[0] || '/product-placeholder.jpg'}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/product-placeholder.jpg';
-                    }}
-                  />
+            {products
+              .filter((p: UserProduct) => (p.sold || 0) > 0)
+              .sort((a: UserProduct, b: UserProduct) => (b.sold || 0) - (a.sold || 0))
+              .slice(0, 4)
+              .map((product: UserProduct) => (
+                <div
+                  key={product.id}
+                  className="bg-accent p-3 rounded-lg flex flex-col items-center hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => window.location.href = `/product/${product.id}`}
+                >
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted">
+                    <img
+                      src={product.images[0] || '/product-placeholder.jpg'}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                      onError={(e: any) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/product-placeholder.jpg';
+                      }}
+                    />
+                    {/* Sales badge */}
+                    <div className="absolute top-1 right-1 bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      📦 {product.sold}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm font-medium truncate w-full text-center text-foreground">{product.title}</p>
+                  <p className="text-xs text-muted-foreground">${product.price}</p>
+                  <p className="text-xs text-green-600 font-semibold mt-1">{product.sold} sold</p>
                 </div>
-                <p className="mt-2 text-sm font-medium truncate w-full text-center text-foreground">{product.title}</p>
-                <p className="text-xs text-muted-foreground">${product.price}</p>
-              </div>
-            ))}
+              ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">No products available</p>
+          <p className="text-muted-foreground">No sold products yet</p>
         )}
       </div>
 
@@ -1055,12 +1093,11 @@ export default function BrandProfile({
               >
                 <div className="flex items-center mb-2">
                   <div className="relative w-8 h-8 rounded-full overflow-hidden mr-2 bg-muted">
-                    <Image
+                    <img
                       src={review.userPhoto || '/default-avatar.png'}
                       alt={review.userName}
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
+                      className="w-full h-full object-cover"
+                      onError={(e: any) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '/default-avatar.png';
                       }}

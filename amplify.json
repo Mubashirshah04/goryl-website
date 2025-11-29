@@ -1,0 +1,41 @@
+{
+  "version": "1.4",
+  "backend": {
+    "output": "amplify_outputs.json",
+    "lint": {
+      "enabled": true
+    },
+    "auth": {
+      "duration": "1h",
+      "login_mechanisms": ["email"]
+    },
+    "api": {
+      "graphql": {
+        "auth": [
+          {
+            "allow": "public"
+          },
+          {
+            "allow": "private",
+            "provider": "userPool"
+          }
+        ]
+      }
+    },
+    "data": {
+      "mysql": false,
+      "postgres": false
+    },
+    "storage": {
+      "aws_region": "ap-south-1",
+      "bucket_name": "goryl-storage",
+      "cors": [
+        {
+          "origin": "*",
+          "methods": ["GET", "PUT", "POST", "DELETE"],
+          "headers": ["Authorization"]
+        }
+      ]
+    }
+  }
+}
